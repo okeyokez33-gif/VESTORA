@@ -1,19 +1,242 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b18"><title>VESTORA</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0"></script></head><body><div class="glow g1"></div><div class="glow g2"></div><div id="toast"></div>
-<main id="auth" class="auth"><section class="pitch"><a class="brand"><b>V</b> VESTORA</a><div><small>THE FUTURE OF DIGITAL FINANCE</small><h1>Make your next<br><em>move matter.</em></h1><p>A clear view of your financial world. Explore your demo portfolio and discover digital finance.</p><div class="orb"><span>V</span></div></div><footer>© 2026 VESTORA · Demo experience only</footer></section><section class="authside"><div class="card"><div class="brand mobile"><b>V</b> VESTORA</div><div class="tabs"><button class="selected" data-tab="login">Log in</button><button data-tab="signup">Create account</button></div>
-<div id="login" class="form"><small>WELCOME BACK</small><h2>Sign in to your space</h2><p>Your financial overview is one step away.</p><label>Email address<input id="liEmail" type="email" placeholder="you@example.com"></label><label>Password<input id="liPass" type="password" placeholder="Your password"></label></div>
-<div id="signup" class="form hide"><small>START YOUR JOURNEY</small><h2>Create your account</h2><p>Set up your personal demo profile.</p><label>Full name<input id="suName" placeholder="Your full name"></label><label>Username<input id="suUser" placeholder="Choose a username"></label><label>Email address<input id="suEmail" type="email" placeholder="you@example.com"></label><label>Password<input id="suPass" type="password" minlength="8" placeholder="At least 8 characters"></label><button id="signupBtn" class="primary">Create account <span>↗</span></button><p class="fine">Demo only. No real deposits, trading or investment returns.</p></div>
-<div id="reset" class="form hide"><small>ACCOUNT RECOVERY</small><h2>Reset password</h2><p>We'll email you a password reset link.</p><label>Email address<input id="reEmail" type="email" placeholder="you@example.com"></label><button id="resetBtn" class="primary">Send reset link</button><button id="back" class="link">Back to log in</button></div><div class="secure">● Secure sign-in powered by Supabase</div></div></section></main>
-<main id="app" class="app hide"><aside><a class="brand"><b>V</b> VESTORA</a><small class="sidehead">WORKSPACE</small><nav><button class="active" data-page="overview">⌂　Overview</button><button data-page="investments">◈　Investments</button><button data-page="markets">⌁　Crypto markets</button><button data-page="wallet">▣　Wallet</button><button data-page="activity">↗　Activity</button><button id="adminNav" class="hide" data-page="admin">⚙　Admin panel</button></nav><div class="sidebottom"><div class="demotag">● DEMO ENVIRONMENT</div><button id="logout">⇥　Log out</button></div></aside><section class="work"><header><div><small>YOUR FINANCIAL OVERVIEW</small><h2 id="title">Overview</h2></div><span class="pill">SIMULATED DATA</span><span id="avatar">V</span></header><div class="content">
-<section id="overview" class="page"><div class="welcome"><div><h1>Welcome, <span id="name">there</span>.</h1><p>Here is your demo account at a glance.</p></div><small id="date"></small></div><div class="notice"><b>ⓘ　Demo account — no real money</b><p>Balances and plans are for interface testing only. Deposits, withdrawals and trading are disabled.</p></div>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080b18">
+<title>VESTORA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0"></script>
+</head>
+<body>
+<div class="glow g1"></div>
+<div class="glow g2"></div>
+<div id="toast"></div>
+
+<main id="auth" class="auth">
+<section class="pitch">
+<a class="brand"><b>V</b> VESTORA</a>
+<div>
+<small>THE FUTURE OF DIGITAL FINANCE</small>
+<h1>Make your next<br><em>move matter.</em></h1>
+<p>A clear view of your financial world. Explore your demo portfolio and discover digital finance.</p>
+<div class="orb"><span>V</span></div>
+</div>
+<footer>© 2026 VESTORA · Demo experience only</footer>
+</section>
+
+<section class="authside">
+<div class="card">
+<div class="brand mobile"><b>V</b> VESTORA</div>
+
+<div class="tabs">
+<button type="button" class="selected" data-tab="login">Log in</button>
+<button type="button" data-tab="signup">Create account</button>
+</div>
+
+<div id="login" class="form">
+<small>WELCOME BACK</small>
+<h2>Sign in to your space</h2>
+<p>Your financial overview is one step away.</p>
+
+<label>Email address
+<input id="liEmail" type="email" placeholder="you@example.com">
+</label>
+
+<label>Password
+<input id="liPass" type="password" placeholder="Your password">
+</label>
+
+<button type="button" id="loginBtn" class="primary">Log in <span>↗</span></button>
+<button type="button" id="passkeyLoginBtn" class="primary">Sign in with Face ID / Fingerprint</button>
+<button type="button" id="forgot" class="link">Forgot password?</button>
+
+<p class="fine">Passkey sign-in may ask for Face ID, fingerprint, device PIN or a security key.</p>
+</div>
+
+<div id="signup" class="form hide">
+<small>START YOUR JOURNEY</small>
+<h2>Create your account</h2>
+<p>Set up your personal demo profile.</p>
+
+<label>Full name
+<input id="suName" placeholder="Your full name">
+</label>
+
+<label>Username
+<input id="suUser" placeholder="Choose a username">
+</label>
+
+<label>Email address
+<input id="suEmail" type="email" placeholder="you@example.com">
+</label>
+
+<label>Password
+<input id="suPass" type="password" minlength="8" placeholder="At least 8 characters">
+</label>
+
+<button type="button" id="signupBtn" class="primary">Create account <span>↗</span></button>
+<p class="fine">Demo only. No real deposits, trading or investment returns.</p>
+</div>
+
+<div id="reset" class="form hide">
+<small>ACCOUNT RECOVERY</small>
+<h2>Reset password</h2>
+<p>We'll email you a password reset link.</p>
+
+<label>Email address
+<input id="reEmail" type="email" placeholder="you@example.com">
+</label>
+
+<button type="button" id="resetBtn" class="primary">Send reset link</button>
+<button type="button" id="back" class="link">Back to log in</button>
+</div>
+
+<div class="secure">● Secure sign-in powered by Supabase</div>
+</div>
+</section>
+</main>
+
+<main id="app" class="app hide">
+<aside>
+<a class="brand"><b>V</b> VESTORA</a>
+<small class="sidehead">WORKSPACE</small>
+
+<nav>
+<button class="active" data-page="overview">⌂　Overview</button>
+<button data-page="investments">◈　Investments</button>
+<button data-page="markets">⌁　Crypto markets</button>
+<button data-page="wallet">▣　Wallet</button>
+<button data-page="activity">↗　Activity</button>
+<button id="adminNav" class="hide" data-page="admin">⚙　Admin panel</button>
+</nav>
+
+<div class="sidebottom">
+<div class="demotag">● DEMO ENVIRONMENT</div>
+<button id="logout">⇥　Log out</button>
+</div>
+</aside>
+
+<section class="work">
+<header>
+<div>
+<small>YOUR FINANCIAL OVERVIEW</small>
+<h2 id="title">Overview</h2>
+</div>
+<span class="pill">SIMULATED DATA</span>
+<span id="avatar">V</span>
+</header>
+
+<div class="content">
+<section id="overview" class="page">
+<div class="welcome">
+<div>
+<h1>Welcome, <span id="name">there</span>.</h1>
+<p>Here is your demo account at a glance.</p>
+</div>
+<small id="date"></small>
+</div>
+
+<div class="notice">
+<b>ⓘ　Demo account — no real money</b>
+<p>Balances and plans are for interface testing only. Deposits, withdrawals and trading are disabled.</p>
+</div>
 
 <div class="notice">
 <b>🔐 Secure your account with a passkey</b>
 <p>Register a passkey on this device. Your device may use Face ID, fingerprint, PIN or a security key. VESTORA does not receive your biometric data.</p>
-<button id="registerPasskeyBtn" class="primary">Set up Face ID / Fingerprint</button>
-</div><div class="stats"><article class="featured"><small>DEMO WALLET BALANCE</small><h2 id="balance">$0.00</h2><p>No real funds are held by VESTORA</p></article><article><small>ACTIVE INVESTMENTS</small><h2>0</h2><p>Demo positions</p></article><article><small>CRYPTO ASSETS</small><h2 id="cryptoCount">0</h2><p>Available to explore</p></article></div><h3>Explore VESTORA</h3><div class="quick"><button data-go="investments">◈<b>Investment plans</b><small>Review demo plans　↗</small></button><button data-go="markets">⌁<b>Crypto markets</b><small>Explore sample assets　↗</small></button><button data-go="activity">↗<b>Recent activity</b><small>Review account events　↗</small></button></div></section>
-<section id="investments" class="page hide"><small>DISCOVER OPPORTUNITIES</small><h1>Investment plans</h1><p>Illustrative plans for product testing. Not offers or promised returns.</p><div id="plans" class="plans">Loading plans…</div></section>
-<section id="markets" class="page hide"><small>DIGITAL ASSETS</small><h1>Crypto markets</h1><p>Sample asset catalogue. Prices are placeholders, not live market data.</p><div class="table"><h3>Assets to explore</h3><table><thead><tr><th>Asset</th><th>Symbol</th><th>Price</th><th>Status</th></tr></thead><tbody id="coins"></tbody></table></div></section>
-<section id="wallet" class="page hide"><small>YOUR ACCOUNT</small><h1>Wallet</h1><p>Your demo wallet is read-only. Funding and withdrawals are disabled.</p><div class="wallet"><small>AVAILABLE DEMO BALANCE</small><h2 id="balance2">$0.00</h2><span class="pill">SIMULATED · USD</span></div><div class="notice">🔒 Financial actions are disabled in this demo.</div></section>
-<section id="activity" class="page hide"><small>ACCOUNT TIMELINE</small><h1>Activity</h1><p>Your account events and demo records.</p><div class="table"><h3>Recent transactions</h3><table><thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead><tbody id="activityRows"><tr><td colspan="4">No activity yet.</td></tr></tbody></table></div></section>
-<section id="admin" class="page hide"><small>CONTROL CENTRE</small><h1>Admin panel</h1><div class="notice">Admin access detected. Privileged financial actions are not enabled in this demo.</div><div class="table"><h3>Investment plans</h3><div id="adminPlans"></div></div></section>
-</div><footer class="appfooter">VESTORA · Demo interface only. Not a bank, broker, exchange or investment adviser.</footer></section></main><script src="config.js"></script><script src="app.js"></script></body></html>
+<button type="button" id="registerPasskeyBtn" class="primary">Set up Face ID / Fingerprint</button>
+</div>
+
+<div class="stats">
+<article class="featured">
+<small>DEMO WALLET BALANCE</small>
+<h2 id="balance">$0.00</h2>
+<p>No real funds are held by VESTORA</p>
+</article>
+<article>
+<small>ACTIVE INVESTMENTS</small>
+<h2>0</h2>
+<p>Demo positions</p>
+</article>
+<article>
+<small>CRYPTO ASSETS</small>
+<h2 id="cryptoCount">0</h2>
+<p>Available to explore</p>
+</article>
+</div>
+
+<h3>Explore VESTORA</h3>
+<div class="quick">
+<button data-go="investments">◈<b>Investment plans</b><small>Review demo plans　↗</small></button>
+<button data-go="markets">⌁<b>Crypto markets</b><small>Explore sample assets　↗</small></button>
+<button data-go="activity">↗<b>Recent activity</b><small>Review account events　↗</small></button>
+</div>
+</section>
+
+<section id="investments" class="page hide">
+<small>DISCOVER OPPORTUNITIES</small>
+<h1>Investment plans</h1>
+<p>Illustrative plans for product testing. Not offers or promised returns.</p>
+<div id="plans" class="plans">Loading plans…</div>
+</section>
+
+<section id="markets" class="page hide">
+<small>DIGITAL ASSETS</small>
+<h1>Crypto markets</h1>
+<p>Sample asset catalogue. Prices are placeholders, not live market data.</p>
+<div class="table">
+<h3>Assets to explore</h3>
+<table>
+<thead><tr><th>Asset</th><th>Symbol</th><th>Price</th><th>Status</th></tr></thead>
+<tbody id="coins"></tbody>
+</table>
+</div>
+</section>
+
+<section id="wallet" class="page hide">
+<small>YOUR ACCOUNT</small>
+<h1>Wallet</h1>
+<p>Your demo wallet is read-only. Funding and withdrawals are disabled.</p>
+<div class="wallet">
+<small>AVAILABLE DEMO BALANCE</small>
+<h2 id="balance2">$0.00</h2>
+<span class="pill">SIMULATED · USD</span>
+</div>
+<div class="notice">🔒 Financial actions are disabled in this demo.</div>
+</section>
+
+<section id="activity" class="page hide">
+<small>ACCOUNT TIMELINE</small>
+<h1>Activity</h1>
+<p>Your account events and demo records.</p>
+<div class="table">
+<h3>Recent transactions</h3>
+<table>
+<thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead>
+<tbody id="activityRows"><tr><td colspan="4">No activity yet.</td></tr></tbody>
+</table>
+</div>
+</section>
+
+<section id="admin" class="page hide">
+<small>CONTROL CENTRE</small>
+<h1>Admin panel</h1>
+<div class="notice">Admin access detected. Privileged financial actions are not enabled in this demo.</div>
+<div class="table">
+<h3>Investment plans</h3>
+<div id="adminPlans"></div>
+</div>
+</section>
+</div>
+
+<footer class="appfooter">VESTORA · Demo interface only. Not a bank, broker, exchange or investment adviser.</footer>
+</section>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
