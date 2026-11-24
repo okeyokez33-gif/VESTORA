@@ -1,0 +1,37 @@
+INSTALLATION — PLEASE FOLLOW IN ORDER
+
+1. Open your GitHub repository: okeyokez33-gif/VESTORA.
+2. Upload these two files to the repository root (same folder as index.html):
+   - markets.js
+   - markets.css
+
+3. Open index.html and find the existing section beginning:
+   <section id="markets" class="page hide">
+   Replace only that whole Markets section (stop immediately before the Wallet section) with the contents of markets-section.html.
+   Do not replace the whole index.html file.
+
+4. In index.html, find the existing stylesheet line:
+   <link rel="stylesheet" href="styles.css">
+   Add this line immediately after it:
+   <link rel="stylesheet" href="markets.css">
+
+5. Near the bottom of index.html, find:
+   <script src="config.js"></script><script src="app.js"></script>
+   Replace that one line with these three script tags in this exact order:
+   <script src="config.js"></script>
+   <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+   <script src="markets.js"></script>
+   <script src="app.js"></script>
+
+6. Open app.js. Find this line inside the go(page) function:
+   if(page==="wallet")loadDeposits();
+   Add this line immediately ABOVE it:
+   if(page==="markets"&&window.VestoraMarkets)window.VestoraMarkets.load();
+
+7. Save the files. Render should start a new deployment automatically. Wait until it reports Live.
+
+8. Open VESTORA, sign in, tap Markets, and check that the prices, coin logos and chart load.
+
+DO NOT delete or replace any other app.js functions. Do not change config.js or Supabase settings for this patch.
+
+If your editor does not preserve the existing code when editing, stop and ask for help before saving.

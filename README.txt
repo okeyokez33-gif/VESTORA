@@ -1,26 +1,19 @@
-VESTORA WEBSITE BUNDLE
+VESTORA — BYBIT-INSPIRED MARKETS PATCH
 
-Files:
-- index.html
-- app.js
-- styles.css
-- config.js
+This is an add-on patch for the current VESTORA source. It is NOT a complete replacement for your website.
 
-DEPLOY
-1. Extract this ZIP.
-2. Upload all four files together to the root of your static website hosting project, replacing the existing files.
-3. Keep the file names exactly as shown.
-4. Redeploy the site.
-5. Test login, signup, passkey, wallet and deposit request submission.
+FILES
+- markets.js: public market prices, coin list, candlestick charts, intervals, search and watchlist.
+- markets.css: responsive exchange-style market layout.
+- markets-section.html: replacement markup for the current placeholder Markets section.
+- INSTALL.txt: exact integration steps.
 
-IMPORTANT LIMITATIONS
-- This bundle connects to the Supabase project already configured in config.js.
-- The deposit request UI uses the Supabase RPCs already created: submit_deposit_request, approve_deposit, reject_deposit.
-- The current backend does NOT automatically monitor Bitcoin or BNB Smart Chain. An administrator must independently verify each transaction on the correct blockchain before approval.
-- The current approval RPC credits the USD wallet based on the USD amount entered by the administrator. Test carefully with non-production accounts before any real funds are accepted.
-- The company deposit addresses are included as supplied. Verify ownership, custody, network support, and address correctness before publishing them or accepting deposits.
-- Live crypto price feeds and interactive charts are NOT implemented in this bundle. The markets page explicitly says live data integration is pending.
-- Do not treat this site as ready to accept real customer funds until blockchain monitoring, secure reconciliation, ledger controls, operational procedures, legal/regulatory requirements, and end-to-end security testing are complete.
-- Face ID/passkey login and registration code is retained.
-- Customer signup/login remains enabled.
-- Never add a Supabase service_role key to config.js.
+IMPORTANT
+- The market data uses Binance public spot market endpoints. It does not place trades.
+- Prices refresh every 10 seconds. Candles load from the selected interval.
+- The chart library is loaded from a public CDN.
+- Network/API availability can vary by region and provider policy. If the feed is blocked, the page will show an unavailable message rather than invented prices.
+- The USDT row uses the USDC/USDT market as an indicative reciprocal value. It is not a separate USDT/USD exchange pair.
+- Coin logos load from CoinCap's public icon CDN.
+- Watchlist is stored locally in the visitor's browser.
+- This patch does not alter Supabase, login, Face ID/passkeys, wallets, deposits, or admin functions.

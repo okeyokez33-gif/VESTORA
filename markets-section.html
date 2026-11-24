@@ -1,0 +1,44 @@
+<section id="markets" class="page hide vestora-markets">
+  <div class="market-heading">
+    <div><small>SPOT MARKET OVERVIEW</small><h1>Markets</h1><p>Explore digital asset prices and market movements.</p></div>
+    <span class="market-live"><i></i> LIVE MARKET DATA</span>
+  </div>
+  <div class="market-ticker">
+    <span>BTC <b id="tickerBTC">—</b></span><span>ETH <b id="tickerETH">—</b></span>
+    <span>BNB <b id="tickerBNB">—</b></span><span>SOL <b id="tickerSOL">—</b></span>
+  </div>
+  <div class="market-layout">
+    <section class="market-main">
+      <div class="market-pair-head">
+        <div class="market-coin-title">
+          <img id="marketCoinLogo" src="https://assets.coincap.io/assets/icons/btc@2x.png" alt="Bitcoin logo">
+          <div><h2 id="marketPairTitle">BTC / USDT</h2><small id="marketCoinName">Bitcoin · Spot market</small></div>
+        </div>
+        <div class="market-current"><strong id="marketCurrentPrice">Loading…</strong><span id="marketPriceChange">Fetching market data</span></div>
+      </div>
+      <div class="market-stats">
+        <div><small>24H HIGH</small><b id="marketHigh">—</b></div>
+        <div><small>24H LOW</small><b id="marketLow">—</b></div>
+        <div><small>24H VOLUME</small><b id="marketVolume">—</b></div>
+        <div><small>24H CHANGE</small><b id="marketChangeStat">—</b></div>
+      </div>
+      <div class="chart-toolbar">
+        <div id="chartIntervals">
+          <button class="selected" data-interval="1m">1m</button><button data-interval="5m">5m</button>
+          <button data-interval="15m">15m</button><button data-interval="1h">1H</button>
+          <button data-interval="4h">4H</button><button data-interval="1d">1D</button>
+        </div>
+        <span>Price chart · USD</span>
+      </div>
+      <div id="vestoraPriceChart" class="market-chart"><div class="chart-loading">Loading price chart…</div></div>
+      <div class="market-chart-foot"><span>Data source: Binance public spot market</span><span>Market information only · No trading</span></div>
+    </section>
+    <aside class="market-side">
+      <div class="market-list-head"><div><h3>Spot markets</h3><small>Prices in USDT</small></div><button id="marketWatchToggle" class="watch-toggle">☆ Watchlist</button></div>
+      <label class="market-search"><span>⌕</span><input id="marketSearch" type="search" placeholder="Search coin or pair"></label>
+      <div class="market-table-head"><span>ASSET / PAIR</span><span>LAST PRICE</span><span>24H</span></div>
+      <div id="marketCoinRows"><div class="chart-loading">Loading markets…</div></div>
+    </aside>
+  </div>
+  <p id="marketStatus" class="market-status">Connecting to live public market data…</p>
+</section>
