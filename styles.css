@@ -18,3 +18,28 @@
 .tabs button{transition:color .25s,border-color .25s}.tabs button:hover{color:#fff}
 .form input{transition:border-color .25s,box-shadow .25s,transform .25s}.form input:focus{transform:translateY(-1px)}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+/* VESTORA account sign-out button */
+.header-logout {
+  border: 1px solid #ffffff24;
+  background: #17213a;
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.header-logout:hover {
+  background: #26365b;
+  border-color: #9e89ff;
+}
+
+@media(max-width:560px) {
+  .header-logout {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+  }
+}
