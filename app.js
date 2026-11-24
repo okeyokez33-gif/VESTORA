@@ -1,9 +1,16 @@
 (()=>{
   const c=window.VESTORA_CONFIG;
   const sb=window.supabase.createClient(
-    c.SUPABASE_URL,
-    c.SUPABASE_ANON_KEY
-  );
+  c.SUPABASE_URL,
+  c.SUPABASE_ANON_KEY,
+  {
+    auth: {
+      experimental: {
+        passkey: true
+      }
+    }
+  }
+);
   const $=id=>document.getElementById(id);
 
   let user=null,role="customer";
