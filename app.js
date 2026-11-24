@@ -14,6 +14,7 @@
     document.querySelectorAll(".page").forEach(x=>x.classList.toggle("hide",x.id!==page));
     document.querySelectorAll("[data-page]").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
     $("title").textContent=({overview:"Overview",markets:"Crypto markets",wallet:"Wallet & deposits",activity:"Activity",admin:"Admin panel"})[page];
+    if(page==="markets"&&window.VestoraMarkets)window.VestoraMarkets.load();
     if(page==="wallet")loadDeposits();
     if(page==="admin"&&role==="admin")loadAdminDeposits();
   }
