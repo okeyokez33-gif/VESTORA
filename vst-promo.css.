@@ -1,0 +1,143 @@
+/* VESTORA featured VST coin promotion */
+.vst-promo {
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(190px,.72fr) 1.5fr;
+  gap:26px;
+  align-items:center;
+  overflow:hidden;
+  margin:24px 0;
+  padding:25px;
+  border:1px solid #c9a85a55;
+  border-radius:18px;
+  background:radial-gradient(ellipse at 8% 45%,#b98a2c22,transparent 48%),linear-gradient(120deg,#17182a,#111b2d 60%,#1b1930);
+  box-shadow:0 18px 55px #0005;
+}
+.vst-promo:after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(110deg,transparent 35%,#e4c16a08 50%,transparent 68%);
+}
+.vst-promo-art {
+  position:relative;
+  min-height:180px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+}
+.vst-coin-mark {
+  z-index:1;
+  width:112px;
+  height:112px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  font:700 55px 'Space Grotesk';
+  color:#231a09;
+  background:radial-gradient(circle at 35% 28%,#fff0b7,#d7aa4d 48%,#825d20);
+  border:5px double #f7dc91;
+  box-shadow:0 0 35px #d5a43d55,inset 0 0 14px #fff8;
+}
+.vst-orbit {
+  position:absolute;
+  width:155px;
+  height:155px;
+  border:1px solid #d6b15c66;
+  border-radius:50%;
+  transform:rotate(-25deg) scaleY(.45);
+}
+.vst-promo-art small {
+  font-size:8px;
+  letter-spacing:2px;
+  color:#c5a85e;
+}
+.vst-promo-copy {
+  position:relative;
+  z-index:1;
+}
+.vst-eyebrow {
+  font-size:9px;
+  letter-spacing:2px;
+  font-weight:700;
+  color:#e2c477;
+}
+.vst-promo-copy h2 {
+  font-size:clamp(25px,3vw,37px);
+  margin:9px 0;
+  color:#fff;
+}
+.vst-promo-copy h2 em {
+  font-style:normal;
+  color:#e5c577;
+}
+.vst-promo-copy>p {
+  font-size:12px;
+  line-height:1.7;
+  color:#b8bfd0;
+  max-width:620px;
+}
+.vst-tags {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:14px 0;
+}
+.vst-tags span {
+  font-size:8px;
+  letter-spacing:1px;
+  padding:7px 9px;
+  border-radius:20px;
+  border:1px solid #d4b15d55;
+  color:#e4c779;
+  background:#d4b15d12;
+}
+.vst-promo-copy .vst-disclaimer {
+  font-size:9px;
+  color:#8994ac;
+}
+.vst-market-btn {
+  border:1px solid #e1c16e;
+  background:linear-gradient(100deg,#b88a35,#e2c477);
+  color:#171321;
+  padding:11px 16px;
+  border-radius:9px;
+  font-weight:700;
+  font-size:11px;
+  margin-top:5px;
+}
+.vst-promo-landing {
+  max-width:620px;
+  margin:30px auto 0;
+  grid-template-columns:180px 1fr;
+  padding:19px;
+  gap:16px;
+}
+.vst-promo-landing .vst-promo-art {
+  min-height:160px;
+}
+.vst-promo-landing .vst-coin-mark {
+  width:88px;
+  height:88px;
+  font-size:43px;
+}
+.vst-promo-landing .vst-orbit {
+  width:125px;
+  height:125px;
+}
+.vst-promo-landing .vst-promo-copy h2 {
+  font-size:27px;
+}
+@media(max-width:700px) {
+  .vst-promo,.vst-promo-landing {
+    grid-template-columns:1fr;
+    gap:8px;
+    padding:19px;
+  }
+  .vst-promo-art {min-height:135px}
+  .vst-promo-landing {margin-top:20px}
+  .vst-promo-copy h2 {font-size:26px}
+}
