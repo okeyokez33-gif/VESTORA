@@ -66,7 +66,52 @@
         <div class="stats"><article class="featured"><small>USD WALLET BALANCE</small><h2 id="balance">$0.00</h2><p>Available wallet balance</p></article><article><small>ACCOUNT</small><h2 id="accountStatus">Active</h2><p>Signed-in profile</p></article><article><small>CRYPTO ASSETS</small><h2>10</h2><p>Market watchlist</p></article></div>
         <h3>Explore VESTORA</h3><div class="quick"><button data-go="wallet">▣<b>Wallet & deposits</b><small>View deposit options ↗</small></button><button data-go="markets">⌁<b>Crypto markets</b><small>Market data status ↗</small></button><button data-go="activity">↗<b>Recent activity</b><small>Review transactions ↗</small></button></div>
       </section>
-      <section id="markets" class="page hide"><small>DIGITAL ASSETS</small><h1>Crypto markets</h1><p>Market prices and interactive charts are being connected to a verified live data provider. No estimated or placeholder prices are shown.</p><div class="notice"><b>Market data integration pending</b><p>BTC, ETH, BNB, SOL, XRP, USDT, USDC, TRX, DOGE and ADA will appear here after live price and chart feeds are connected and tested.</p></div></section>
+
+      <section id="markets" class="page hide vestora-markets">
+        <div class="market-heading">
+          <div><small>SPOT MARKET OVERVIEW</small><h1>Markets</h1><p>Explore digital asset prices and market movements.</p></div>
+          <span class="market-live"><i></i> LIVE MARKET DATA</span>
+        </div>
+        <div class="market-ticker">
+          <span>BTC <b id="tickerBTC">—</b></span><span>ETH <b id="tickerETH">—</b></span>
+          <span>BNB <b id="tickerBNB">—</b></span><span>SOL <b id="tickerSOL">—</b></span>
+        </div>
+        <div class="market-layout">
+          <section class="market-main">
+            <div class="market-pair-head">
+              <div class="market-coin-title">
+                <img id="marketCoinLogo" src="https://assets.coincap.io/assets/icons/btc@2x.png" alt="Bitcoin logo">
+                <div><h2 id="marketPairTitle">BTC / USDT</h2><small id="marketCoinName">Bitcoin · Spot market</small></div>
+              </div>
+              <div class="market-current"><strong id="marketCurrentPrice">Loading…</strong><span id="marketPriceChange">Fetching market data</span></div>
+            </div>
+            <div class="market-stats">
+              <div><small>24H HIGH</small><b id="marketHigh">—</b></div>
+              <div><small>24H LOW</small><b id="marketLow">—</b></div>
+              <div><small>24H VOLUME</small><b id="marketVolume">—</b></div>
+              <div><small>24H CHANGE</small><b id="marketChangeStat">—</b></div>
+            </div>
+            <div class="chart-toolbar">
+              <div id="chartIntervals">
+                <button class="selected" data-interval="1m">1m</button><button data-interval="5m">5m</button>
+                <button data-interval="15m">15m</button><button data-interval="1h">1H</button>
+                <button data-interval="4h">4H</button><button data-interval="1d">1D</button>
+              </div>
+              <span>Price chart · USD</span>
+            </div>
+            <div id="vestoraPriceChart" class="market-chart"><div class="chart-loading">Loading price chart…</div></div>
+            <div class="market-chart-foot"><span>Data source: Binance public spot market</span><span>Market information only · No trading</span></div>
+          </section>
+          <aside class="market-side">
+            <div class="market-list-head"><div><h3>Spot markets</h3><small>Prices in USDT</small></div><button id="marketWatchToggle" class="watch-toggle">☆ Watchlist</button></div>
+            <label class="market-search"><span>⌕</span><input id="marketSearch" type="search" placeholder="Search coin or pair"></label>
+            <div class="market-table-head"><span>ASSET / PAIR</span><span>LAST PRICE</span><span>24H</span></div>
+            <div id="marketCoinRows"><div class="chart-loading">Loading markets…</div></div>
+          </aside>
+        </div>
+        <p id="marketStatus" class="market-status">Connecting to live public market data…</p>
+      </section>
+
       <section id="wallet" class="page hide"><small>YOUR ACCOUNT</small><h1>Wallet & deposits</h1><div class="wallet"><small>AVAILABLE USD BALANCE</small><h2 id="balance2">$0.00</h2><span class="pill">USD WALLET</span></div>
         <div class="notice"><b>Deposit processing</b><p>Deposit requests are recorded for administrator review. A submitted transaction hash is not proof of payment. An administrator must independently verify the transaction on the correct blockchain before approving a credit.</p></div>
         <div class="panel"><h3>Submit a deposit transaction</h3>
