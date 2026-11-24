@@ -164,6 +164,45 @@
     if(error)toast(error.message);
     else enter(data.user);
   };
+  $("registerPasskeyBtn").onclick=async()=>{
+    if(!window.isSecureContext || !window.PublicKeyCredential)
+      return toast("Passkeys are not supported in this browser.");
+
+    if(!user)
+      return toast("Please sign in first.");
+
+    const b=$("registerPasskeyBtn");
+    b.disabled=true;
+
+    try{
+      const {error}=await sb.auth.registerPasskey();
+
+      if(error)toast(error.message);
+      else toast("Passkey registered successfully.");
+    }catch(e){
+      toast(e.message||"Passkey setup failed.");
+    }finally{
+      b.disabled=false;
+    }
+  };
+
+  $("passkeyLoginBtn").onclick=async()=>{
+    if(!window.isSecureContext || !window.PublicKeyCredential)
+      return toast("Passkeys are not supported in this browser.");
+
+    const b=$("passkeyLoginBtn");
+    b.disabled=true;
+
+    try{
+      const {error}=await sb.auth.signInWithPasskey();
+
+      if(error)toast(error.message);
+    }catch(e){
+      toast(e.message||"Passkey sign-in failed.");
+    }finally{
+      b.disabled=false;
+    }
+  };
 
   $("signupBtn").onclick=async()=>{
     const name=$("suName").value.trim();
