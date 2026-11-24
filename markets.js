@@ -59,7 +59,7 @@
     if(el) el.textContent=value;
   }
 
-  // FAST MARKET DATA CONNECTION
+  // FAST HISTORICAL MARKET DATA CONNECTION
   async function fetchFromHosts(path) {
     const hosts = preferredHost
       ? [preferredHost,...API_HOSTS.filter(h => h !== preferredHost)]
@@ -82,9 +82,7 @@
           signal:controller.signal
         });
 
-        if(!response.ok) {
-          throw new Error("HTTP " + response.status);
-        }
+        if(!response.ok) throw new Error("HTTP " + response.status);
 
         const data = await response.json();
         preferredHost = host;
@@ -99,11 +97,8 @@
 
     try {
       const result = await Promise.any(attempts);
-
       controllers.forEach(controller => controller.abort());
-
       return result;
-
     } catch(error) {
       throw new Error("All market-data servers failed");
     }
@@ -351,16 +346,14 @@
     pendingCandle=null;
   }
 
-  // LIVE BINANCE PRICE STREAM
+  // LIVE BYBIT SPOT TRADE STREAM — REAL EXECUTED TRADES
   function startLiveUpdates(asset) {
     stopLiveUpdates();
 
     if(!asset || asset.internal || !("WebSocket" in window)) return;
 
     const generation=socketGeneration;
-
-    const stream="wss://stream.binance.com:443/ws/"+
-      asset.pair.toLowerCase()+"@aggTrade";
+    const stream="wss://stream.bybit.com/v5/public/spot";
 
     try {
       liveSocket=new WebSocket(stream);
@@ -372,41 +365,49 @@
     liveSocket.onopen=()=>{
       if(generation!==socketGeneration) return;
 
-      setText("marketStatus","Live chart connected · Updating every 0.5 seconds");
+      liveSocket.send(JSON.stringify({
+        op:"subscribe",
+        args:["publicTrade."+asset.pair]
+      }));
+
+      setText("marketStatus","Connecting to Bybit live spot trades…");
     };
 
     liveSocket.onmessage=event=>{
       if(generation!==socketGeneration || selected!==asset.symbol) return;
 
       try {
-        const d=JSON.parse(event.data);
-        const price=Number(d.p);
-        const time=Number(d.T);
+        const message=JSON.parse(event.data);
 
-        if(!Number.isFinite(price) || !Number.isFinite(time)) return;
+        if(message.topic!=="publicTrade."+asset.pair || !Array.isArray(message.data)) return;
 
-        const seconds=intervalSeconds(interval);
-        const candleTime=Math.floor(time/(seconds*1000))*seconds;
+        message.data.forEach(trade=>{
+          const price=Number(trade.p);
+          const time=Number(trade.T);
 
-        if(!liveCandle || candleTime>liveCandle.time) {
-          liveCandle={
-            time:candleTime,
-            open:price,
-            high:price,
-            low:price,
-            close:price
-          };
+          if(!Number.isFinite(price) || !Number.isFinite(time)) return;
 
-        } else if(candleTime===liveCandle.time) {
-          liveCandle.high=Math.max(liveCandle.high,price);
-          liveCandle.low=Math.min(liveCandle.low,price);
-          liveCandle.close=price;
+          const seconds=intervalSeconds(interval);
+          const candleTime=Math.floor(time/(seconds*1000))*seconds;
 
-        } else {
-          return;
-        }
+          if(!liveCandle || candleTime>liveCandle.time) {
+            liveCandle={
+              time:candleTime,
+              open:price,
+              high:price,
+              low:price,
+              close:price
+            };
+          } else if(candleTime===liveCandle.time) {
+            liveCandle.high=Math.max(liveCandle.high,price);
+            liveCandle.low=Math.min(liveCandle.low,price);
+            liveCandle.close=price;
+          } else {
+            return;
+          }
 
-        pendingCandle={...liveCandle};
+          pendingCandle={...liveCandle};
+        });
 
       } catch(error) {}
     };
@@ -420,7 +421,7 @@
     liveSocket.onclose=()=>{
       if(generation!==socketGeneration || selected!==asset.symbol) return;
 
-      setText("marketStatus","Live chart reconnecting…");
+      setText("marketStatus","Bybit live feed reconnecting…");
 
       reconnectTimer=setTimeout(()=>{
         if(generation===socketGeneration && selected===asset.symbol) {
@@ -440,7 +441,7 @@
       try {
         candleSeries.update(candle);
       } catch(error) {}
-    },500);
+    },200);
   }
 
   // FAST CHART LOADING WITH LOCAL CACHE
@@ -498,7 +499,6 @@
 
           chartMessage("Refreshing market data…");
 
-          // Connect to live prices while fresh candles load.
           startLiveUpdates(asset);
         }
       }
@@ -508,7 +508,7 @@
       chartMessage("Loading "+asset.symbol+" chart…");
     }
 
-    // LOAD FRESH CANDLES IN THE BACKGROUND
+    // LOAD FRESH HISTORICAL CANDLES
     try {
       const data=await fetchFromHosts(
         "/api/v3/klines?symbol="+encodeURIComponent(asset.pair)+
@@ -545,7 +545,6 @@
       liveCandle={...candles[candles.length-1]};
       pendingCandle=null;
 
-      // SAVE THE LATEST HISTORICAL CANDLES
       try {
         localStorage.setItem(cacheKey,JSON.stringify(candles));
       } catch(error) {}
@@ -555,12 +554,11 @@
       const note=el.querySelector(".chart-loading");
       if(note) note.remove();
 
-      // Start live updates if no cached connection is running.
       if(!hasCached) {
         startLiveUpdates(asset);
       }
 
-      setText("marketStatus","Market data refreshed · Live updates enabled");
+      setText("marketStatus","Historical candles loaded · Connecting live trade feed");
 
     } catch(error) {
       if(requestId!==candleRequest) return;
