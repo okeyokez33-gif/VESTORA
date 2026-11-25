@@ -53,7 +53,7 @@
       markets:"Crypto markets",
       wallet:"Wallet & deposits",
       activity:"Activity",
-      admin:"Admin panel"
+      admin:"Admin Dashboard"
     })[page];
 
     if(page==="markets"&&window.VestoraMarkets)
@@ -62,11 +62,52 @@
     if(page==="wallet")
       loadDeposits();
 
-    if(page==="admin"&&role==="admin"){
-      loadAdminDeposits();
-      loadBalanceAdjustmentLogs();
-    }
+    if(page==="admin"&&role==="admin")
+      openAdminView("dashboard");
   }
+
+  // ADMIN DASHBOARD NAVIGATION
+
+  function openAdminView(view){
+    if(role!=="admin")
+      return toast("Administrator access required.");
+
+    const dashboard=$("adminDashboardHome");
+    const views={
+      deposits:$("adminViewDeposits"),
+      balance:$("adminViewBalance"),
+      history:$("adminViewHistory")
+    };
+
+    dashboard.classList.toggle("hide",view!=="dashboard");
+
+    Object.entries(views).forEach(([name,element])=>{
+      element.classList.toggle("hide",name!==view);
+    });
+
+    const titles={
+      dashboard:"Admin Dashboard",
+      deposits:"Pending Deposits",
+      balance:"Balance Management",
+      history:"Balance Adjustment History"
+    };
+
+    $("title").textContent=titles[view]||"Admin Dashboard";
+
+    if(view==="deposits")
+      loadAdminDeposits();
+
+    if(view==="history")
+      loadBalanceAdjustmentLogs();
+  }
+
+  document.querySelectorAll("[data-admin-view]").forEach(button=>{
+    button.onclick=()=>openAdminView(button.dataset.adminView);
+  });
+
+  document.querySelectorAll("[data-admin-back]").forEach(button=>{
+    button.onclick=()=>openAdminView("dashboard");
+  });
 
   async function enter(u){
     user=u;
