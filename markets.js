@@ -54,7 +54,11 @@
     internal:true
   });
 
-  const BYBIT_API="https://api.bybit.com";
+  const BYBIT_APIS=[
+    "https://api.bybit.com",
+    "https://api.bytick.com"
+  ];
+
   const BYBIT_WS="wss://stream.bybit.com/v5/public/spot";
 
   const $=id=>document.getElementById(id);
@@ -75,6 +79,7 @@
   let heartbeatTimer=null;
   let socketGeneration=0;
 
+  let tickerPromise=null;
   let priceSource="Bybit";
   let chartLoading=false;
 
@@ -101,37 +106,57 @@
     if(el)el.textContent=value;
   }
 
-  // BYBIT HTTP REQUEST
+  // BYBIT HTTP REQUEST WITH BACKUP ENDPOINT
 
   async function bybitRequest(path){
-    const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),12000);
+    const controllers=BYBIT_APIS.map(
+      ()=>new AbortController()
+    );
+
+    const requests=BYBIT_APIS.map(async(base,index)=>{
+      const controller=controllers[index];
+
+      const timeout=setTimeout(
+        ()=>controller.abort(),
+        25000
+      );
+
+      try{
+        const response=await fetch(base+path,{
+          method:"GET",
+          mode:"cors",
+          cache:"no-store",
+          headers:{"Accept":"application/json"},
+          signal:controller.signal
+        });
+
+        if(!response.ok){
+          throw new Error("Bybit HTTP "+response.status);
+        }
+
+        const result=await response.json();
+
+        if(result.retCode!==0){
+          throw new Error(
+            result.retMsg||"Bybit API request failed"
+          );
+        }
+
+        return result.result;
+
+      }finally{
+        clearTimeout(timeout);
+      }
+    });
 
     try{
-      const response=await fetch(BYBIT_API+path,{
-        method:"GET",
-        mode:"cors",
-        cache:"no-store",
-        headers:{"Accept":"application/json"},
-        signal:controller.signal
-      });
-
-      if(!response.ok){
-        throw new Error("Bybit HTTP "+response.status);
-      }
-
-      const result=await response.json();
-
-      if(result.retCode!==0){
-        throw new Error(
-          result.retMsg||"Bybit API request failed"
-        );
-      }
-
-      return result.result;
-
+      return await Promise.any(requests);
     }finally{
-      clearTimeout(timeout);
+      controllers.forEach(controller=>{
+        if(!controller.signal.aborted){
+          controller.abort();
+        }
+      });
     }
   }
 
@@ -160,77 +185,85 @@
   // LOAD BYBIT LIVE TICKERS
 
   async function loadTickers(){
-    try{
-      const result=await bybitRequest(
-        "/v5/market/tickers?category=spot"
-      );
+    if(tickerPromise)return tickerPromise;
 
-      if(!Array.isArray(result.list)||!result.list.length){
-        throw new Error("No Bybit ticker data returned");
-      }
+    tickerPromise=(async()=>{
+      try{
+        const result=await bybitRequest(
+          "/v5/market/tickers?category=spot"
+        );
 
-      const updated={};
+        if(!Array.isArray(result.list)||!result.list.length){
+          throw new Error("No Bybit ticker data returned");
+        }
 
-      result.list.forEach(item=>{
-        if(!item.symbol)return;
+        const updated={};
 
-        const price=Number(item.lastPrice);
+        result.list.forEach(item=>{
+          if(!item.symbol)return;
 
-        if(!Number.isFinite(price)||price<=0)return;
+          const price=Number(item.lastPrice);
 
-        const change=Number(item.price24hPcnt);
+          if(!Number.isFinite(price)||price<=0)return;
 
-        updated[item.symbol]={
-          symbol:item.symbol,
-          lastPrice:String(price),
-          priceChangePercent:String(
-            Number.isFinite(change)?change*100:0
-          ),
-          highPrice:String(item.highPrice24h||0),
-          lowPrice:String(item.lowPrice24h||0),
-          quoteVolume:String(item.turnover24h||0)
+          const change=Number(item.price24hPcnt);
+
+          updated[item.symbol]={
+            symbol:item.symbol,
+            lastPrice:String(price),
+            priceChangePercent:String(
+              Number.isFinite(change)?change*100:0
+            ),
+            highPrice:String(item.highPrice24h||0),
+            lowPrice:String(item.lowPrice24h||0),
+            quoteVolume:String(item.turnover24h||0)
+          };
+        });
+
+        tickers=updated;
+
+        tickers.USDTUSDT={
+          symbol:"USDTUSDT",
+          lastPrice:"1",
+          priceChangePercent:"0",
+          highPrice:"1",
+          lowPrice:"1",
+          quoteVolume:"0"
         };
-      });
 
-      tickers=updated;
+        ["BTC","ETH","BNB","SOL"].forEach(s=>{
+          const t=tickers[s+"USDT"];
 
-      // USDT is displayed as its approximate dollar peg.
-      tickers.USDTUSDT={
-        symbol:"USDTUSDT",
-        lastPrice:"1",
-        priceChangePercent:"0",
-        highPrice:"1",
-        lowPrice:"1",
-        quoteVolume:"0"
-      };
+          setText(
+            "ticker"+s,
+            t?money(Number(t.lastPrice)):"—"
+          );
+        });
 
-      ["BTC","ETH","BNB","SOL"].forEach(s=>{
-        const t=tickers[s+"USDT"];
+        updatePair();
+        renderRows();
 
         setText(
-          "ticker"+s,
-          t?money(Number(t.lastPrice)):"—"
+          "marketStatus",
+          "Live prices updating automatically · Bybit Spot"
         );
-      });
 
-      updatePair();
-      renderRows();
+        priceSource="Bybit";
 
-      setText(
-        "marketStatus",
-        "Live prices updating automatically · Bybit Spot"
-      );
+      }catch(error){
+        console.error("Bybit ticker error:",error);
 
-      priceSource="Bybit";
+        setText(
+          "marketStatus",
+          "Market connection unavailable · Retrying automatically"
+        );
 
-    }catch(error){
-      console.error("Bybit ticker error:",error);
+      }finally{
+        tickerPromise=null;
+      }
+    })();
 
-      setText(
-        "marketStatus",
-        "Bybit live prices unavailable. Check your connection."
-      );
-    }
+    return tickerPromise;
   }
 
   function tickerFor(asset){
@@ -473,18 +506,40 @@
       },
 
       crosshair:{
-        mode:window.LightweightCharts.CrosshairMode.Normal
+        mode:window.LightweightCharts.CrosshairMode
+          ?window.LightweightCharts.CrosshairMode.Normal
+          :0
       }
     });
 
-    candleSeries=chart.addCandlestickSeries({
+    const candleOptions={
       upColor:"#18bd88",
       downColor:"#ef5b76",
       borderUpColor:"#18bd88",
       borderDownColor:"#ef5b76",
       wickUpColor:"#18bd88",
       wickDownColor:"#ef5b76"
-    });
+    };
+
+    if(typeof chart.addCandlestickSeries==="function"){
+      candleSeries=chart.addCandlestickSeries(
+        candleOptions
+      );
+    }else if(
+      typeof chart.addSeries==="function"&&
+      window.LightweightCharts.CandlestickSeries
+    ){
+      candleSeries=chart.addSeries(
+        window.LightweightCharts.CandlestickSeries,
+        candleOptions
+      );
+    }else{
+      chart.remove();
+      chart=null;
+      throw new Error(
+        "Unsupported Lightweight Charts version"
+      );
+    }
 
     if(window.ResizeObserver){
       if(resizeObserver)resizeObserver.disconnect();
@@ -617,7 +672,9 @@
           }
 
           try{
-            candleSeries.update(candle);
+            if(candleSeries){
+              candleSeries.update(candle);
+            }
           }catch(error){
             console.warn("Candle update skipped:",error);
           }
@@ -697,8 +754,14 @@
       return;
     }
 
-    if(!ensureChart()){
-      chartMessage("Chart area is not ready yet.");
+    try{
+      if(!ensureChart()){
+        chartMessage("Chart area is not ready yet.");
+        return;
+      }
+    }catch(error){
+      console.error("Chart creation error:",error);
+      chartMessage("Unable to create chart. Check the chart library.");
       return;
     }
 
@@ -706,13 +769,11 @@
 
     chartLoading=true;
 
-    // Separate cache from old Binance candles.
     const cacheKey=
       "vestora-bybit-candles-"+asset.pair+"-"+interval;
 
     let hasCached=false;
 
-    // Show saved Bybit candles immediately.
     try{
       const saved=localStorage.getItem(cacheKey);
 
@@ -733,7 +794,6 @@
       console.warn("Bybit candle cache error:",error);
     }
 
-    // Translate the interval into Bybit format.
     const apiInterval=bybitInterval(interval);
 
     try{
@@ -753,8 +813,6 @@
         );
       }
 
-      // Bybit sends candles newest first.
-      // Lightweight Charts needs oldest first.
       const candles=result.list.map(k=>({
         time:Math.floor(Number(k[0])/1000),
         open:Number(k[1]),
@@ -794,7 +852,6 @@
         "Bybit historical candles loaded · Connecting live chart"
       );
 
-      // Connect to Bybit's actual live Kline stream.
       startLiveUpdates(asset);
 
     }catch(error){
