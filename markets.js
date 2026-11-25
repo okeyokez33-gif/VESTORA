@@ -82,6 +82,7 @@
   let tickerPromise=null;
   let priceSource="Bybit";
   let chartLoading=false;
+  let liveCandle=null;
 
   const fmt=n=>!Number.isFinite(n)?"—":
     n>=1000?n.toLocaleString("en-US",{
@@ -182,7 +183,7 @@
     return map[value]||"1";
   }
 
-  // LOAD BYBIT LIVE TICKERS
+  // LOAD BYBIT HISTORICAL TICKERS
 
   async function loadTickers(){
     if(tickerPromise)return tickerPromise;
@@ -584,7 +585,7 @@
     }
   }
 
-  // BYBIT LIVE CANDLESTICK WEBSOCKET
+  // BYBIT LIVE PRICES, TRADES AND CANDLESTICKS
 
   function startLiveUpdates(asset){
     stopLiveUpdates();
@@ -595,12 +596,107 @@
 
     const generation=socketGeneration;
     const candleInterval=bybitInterval(interval);
-    const topic="kline."+candleInterval+"."+asset.pair;
+    const candleTopic="kline."+candleInterval+"."+asset.pair;
+    const tickerTopic="tickers."+asset.pair;
+    const tradeTopic="publicTrade."+asset.pair;
+
+    let lastRowsRender=0;
+    let tradeCandle=liveCandle?{...liveCandle}:null;
+
+    function renderRowsThrottled(){
+      const now=Date.now();
+
+      if(now-lastRowsRender>=250){
+        lastRowsRender=now;
+        renderRows();
+      }
+    }
+
+    function candleStart(timestamp){
+      const date=new Date(timestamp);
+
+      if(interval==="1M"){
+        return Date.UTC(
+          date.getUTCFullYear(),
+          date.getUTCMonth(),
+          1
+        )/1000;
+      }
+
+      if(interval==="1w"){
+        const day=date.getUTCDay()||7;
+        date.setUTCDate(date.getUTCDate()-day+1);
+        date.setUTCHours(0,0,0,0);
+        return date.getTime()/1000;
+      }
+
+      const seconds={
+        "1m":60,"3m":180,"5m":300,
+        "15m":900,"30m":1800,
+        "1h":3600,"2h":7200,
+        "4h":14400,"6h":21600,
+        "12h":43200,"1d":86400
+      }[interval]||60;
+
+      return Math.floor(timestamp/1000/seconds)*seconds;
+    }
+
+    function updateFromTrade(trade){
+      const price=Number(trade.p);
+      const timestamp=Number(trade.T);
+
+      if(
+        !Number.isFinite(price)||price<=0||
+        !Number.isFinite(timestamp)
+      ){
+        return;
+      }
+
+      const bucket=candleStart(timestamp);
+
+      if(!tradeCandle||bucket>tradeCandle.time){
+        tradeCandle={
+          time:bucket,
+          open:price,
+          high:price,
+          low:price,
+          close:price
+        };
+      }else if(bucket===tradeCandle.time){
+        tradeCandle={
+          ...tradeCandle,
+          high:Math.max(tradeCandle.high,price),
+          low:Math.min(tradeCandle.low,price),
+          close:price
+        };
+      }else{
+        return;
+      }
+
+      liveCandle={...tradeCandle};
+
+      try{
+        if(candleSeries){
+          candleSeries.update(tradeCandle);
+        }
+      }catch(error){
+        console.warn("Live trade candle update:",error);
+      }
+
+      const existing=tickers[asset.pair];
+
+      if(existing){
+        existing.lastPrice=String(price);
+      }
+
+      updatePair();
+      renderRowsThrottled();
+    }
 
     try{
       liveSocket=new WebSocket(BYBIT_WS);
     }catch(error){
-      chartMessage("Unable to connect to Bybit live chart.");
+      chartMessage("Unable to connect to Bybit live market data.");
       return;
     }
 
@@ -609,7 +705,11 @@
 
       liveSocket.send(JSON.stringify({
         op:"subscribe",
-        args:[topic]
+        args:[
+          candleTopic,
+          tickerTopic,
+          tradeTopic
+        ]
       }));
 
       heartbeatTimer=setInterval(()=>{
@@ -625,7 +725,7 @@
 
       setText(
         "marketStatus",
-        "Bybit historical chart loaded · Connecting live candles"
+        "Connecting to Bybit live prices, trades and candles…"
       );
     };
 
@@ -645,48 +745,103 @@
           return;
         }
 
-        if(
-          message.topic!==topic||
-          !Array.isArray(message.data)
-        ){
+        // FAST LIVE PRICE UPDATES
+
+        if(message.topic===tickerTopic){
+          const item=message.data;
+
+          if(item&&item.lastPrice){
+            const existing=tickers[asset.pair]||{
+              symbol:asset.pair
+            };
+
+            const price=Number(item.lastPrice);
+            const change=Number(item.price24hPcnt);
+
+            if(Number.isFinite(price)&&price>0){
+              existing.lastPrice=String(price);
+            }
+
+            if(Number.isFinite(change)){
+              existing.priceChangePercent=String(change*100);
+            }
+
+            if(item.highPrice24h){
+              existing.highPrice=String(item.highPrice24h);
+            }
+
+            if(item.lowPrice24h){
+              existing.lowPrice=String(item.lowPrice24h);
+            }
+
+            if(item.turnover24h){
+              existing.quoteVolume=String(item.turnover24h);
+            }
+
+            tickers[asset.pair]=existing;
+
+            updatePair();
+            renderRowsThrottled();
+          }
+
           return;
         }
 
-        message.data.forEach(item=>{
-          const candle={
-            time:Math.floor(Number(item.start)/1000),
-            open:Number(item.open),
-            high:Number(item.high),
-            low:Number(item.low),
-            close:Number(item.close)
-          };
+        // REAL-TIME TRADE UPDATES
 
-          if(
-            !Number.isFinite(candle.time)||
-            !Number.isFinite(candle.open)||
-            !Number.isFinite(candle.high)||
-            !Number.isFinite(candle.low)||
-            !Number.isFinite(candle.close)
-          ){
-            return;
+        if(message.topic===tradeTopic){
+          if(Array.isArray(message.data)){
+            message.data.forEach(updateFromTrade);
           }
+          return;
+        }
 
-          try{
-            if(candleSeries){
-              candleSeries.update(candle);
+        // BYBIT KLINE UPDATES
+
+        if(
+          message.topic===candleTopic&&
+          Array.isArray(message.data)
+        ){
+          message.data.forEach(item=>{
+            const candle={
+              time:Math.floor(Number(item.start)/1000),
+              open:Number(item.open),
+              high:Number(item.high),
+              low:Number(item.low),
+              close:Number(item.close)
+            };
+
+            if(
+              !Number.isFinite(candle.time)||
+              !Number.isFinite(candle.open)||
+              !Number.isFinite(candle.high)||
+              !Number.isFinite(candle.low)||
+              !Number.isFinite(candle.close)
+            ){
+              return;
             }
-          }catch(error){
-            console.warn("Candle update skipped:",error);
-          }
-        });
 
-        setText(
-          "marketStatus",
-          "Live Bybit candlesticks connected · "+asset.symbol
-        );
+            try{
+              if(candleSeries){
+                candleSeries.update(candle);
+              }
+
+              tradeCandle=candle;
+              liveCandle={...candle};
+
+            }catch(error){
+              console.warn("Candle update skipped:",error);
+            }
+          });
+
+          setText(
+            "marketStatus",
+            "Live Bybit prices and candlesticks connected · "+asset.symbol
+          );
+        }
 
       }catch(error){
-        console.error("Bybit WebSocket message error:",error);
+        console.error("Bybit live data message error:",error);
       }
     };
 
@@ -694,7 +849,7 @@
       if(generation===socketGeneration){
         setText(
           "marketStatus",
-          "Bybit live chart connection interrupted"
+          "Bybit live market connection interrupted"
         );
       }
     };
@@ -709,7 +864,7 @@
 
       setText(
         "marketStatus",
-        "Bybit chart disconnected · Reconnecting…"
+        "Bybit disconnected · Reconnecting…"
       );
 
       reconnectTimer=setTimeout(()=>{
@@ -727,6 +882,8 @@
 
   async function loadCandles(){
     stopLiveUpdates();
+
+    liveCandle=null;
 
     const requestId=++candleRequest;
     const asset=pairFor(selected);
@@ -783,6 +940,8 @@
         if(Array.isArray(cached)&&cached.length){
           candleSeries.setData(cached);
 
+          liveCandle={...cached[cached.length-1]};
+
           chart.timeScale().fitContent();
 
           hasCached=true;
@@ -833,6 +992,8 @@
 
       candleSeries.setData(candles);
 
+      liveCandle={...candles[candles.length-1]};
+
       try{
         localStorage.setItem(
           cacheKey,
@@ -869,6 +1030,9 @@
           "marketStatus",
           "Showing saved Bybit candles · Historical refresh unavailable"
         );
+
+        startLiveUpdates(asset);
+
       }else{
         chartMessage(
           "Bybit historical candles unavailable. Please try again."
