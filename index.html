@@ -14,7 +14,6 @@
 <link rel="stylesheet" href="vestora-luxury.css">
 
 <style>
-/* VESTORA FEATURED COIN */
 .vst-promo {
   position:relative;
   display:grid;
@@ -654,6 +653,81 @@
             </thead>
             <tbody id="adminDeposits">
               <tr><td colspan="5">No pending requests.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- CUSTOMER BALANCE MANAGEMENT -->
+        <div class="panel admin-balance-panel">
+          <h3>Customer Balance Management</h3>
+
+          <label>Search customer by name or username
+            <input id="balanceCustomerSearch" type="search"
+              placeholder="Enter customer name or username">
+          </label>
+
+          <button id="balanceCustomerSearchBtn" class="primary compact">
+            Search Customers
+          </button>
+
+          <div id="balanceCustomerResults"></div>
+
+          <div id="balanceCustomerSelected" class="hide">
+            <h3 id="balanceCustomerName"></h3>
+            <p id="balanceCustomerUsername"></p>
+
+            <p>USD Balance: <strong id="adminUsdBalance">$0.00</strong></p>
+            <p>VST Balance: <strong id="adminVstBalance">0 VST</strong></p>
+          </div>
+
+          <label>Currency
+            <select id="balanceCurrency">
+              <option value="USD">USD</option>
+              <option value="VST">VST</option>
+            </select>
+          </label>
+
+          <label>Adjustment
+            <select id="balanceAdjustmentType">
+              <option value="credit">Credit</option>
+              <option value="debit">Debit</option>
+            </select>
+          </label>
+
+          <label>Amount
+            <input id="balanceAdjustmentAmount" type="number"
+              min="0" step="any" placeholder="Enter amount">
+          </label>
+
+          <label>Reason
+            <input id="balanceAdjustmentReason" type="text"
+              placeholder="Reason for adjustment">
+          </label>
+
+          <button id="applyBalanceAdjustment" class="primary compact" disabled>
+            Review and Apply Adjustment
+          </button>
+        </div>
+
+        <!-- BALANCE ADJUSTMENT AUDIT HISTORY -->
+        <div class="table">
+          <h3>Balance Adjustment History</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Admin</th>
+                <th>Currency</th>
+                <th>Action</th>
+                <th>Amount</th>
+                <th>Before</th>
+                <th>After</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody id="balanceAdjustmentLogs">
+              <tr><td colspan="9">No records yet.</td></tr>
             </tbody>
           </table>
         </div>
