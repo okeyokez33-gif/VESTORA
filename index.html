@@ -4,7 +4,759 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080b18">
+<title>VESTORA</title><!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080b18">
 <title>VESTORA</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="markets.css">
+<link rel="stylesheet" href="vestora-luxury.css">
+
+<style>
+.vst-promo {
+  position:relative;
+  display:grid;
+  grid-template-columns:180px 1fr;
+  gap:22px;
+  align-items:center;
+  overflow:hidden;
+  margin:22px 0;
+  padding:22px;
+  border:1px solid #c9a85a66;
+  border-radius:18px;
+  background:
+    radial-gradient(ellipse at 8% 45%,#b98a2c25,transparent 48%),
+    linear-gradient(120deg,#17182a,#111b2d 60%,#1b1930);
+  box-shadow:0 18px 55px #0005;
+}
+.vst-promo:after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(110deg,transparent 35%,#e4c16a10 50%,transparent 68%);
+}
+.vst-promo-art {
+  position:relative;
+  min-height:155px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:13px;
+}
+.vst-coin-mark {
+  z-index:1;
+  width:105px;
+  height:105px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  font:700 52px 'Space Grotesk';
+  color:#231a09;
+  background:radial-gradient(circle at 35% 28%,#fff0b7,#d7aa4d 48%,#825d20);
+  border:5px double #f7dc91;
+  box-shadow:0 0 35px #d5a43d66,inset 0 0 14px #fff8;
+}
+.vst-orbit {
+  position:absolute;
+  width:145px;
+  height:145px;
+  border:1px solid #d6b15c66;
+  border-radius:50%;
+  transform:rotate(-25deg) scaleY(.45);
+  animation:vstOrbit 12s linear infinite;
+}
+@keyframes vstOrbit {
+  to {transform:rotate(335deg) scaleY(.45)}
+}
+.vst-promo-art small {
+  font-size:8px;
+  letter-spacing:2px;
+  color:#c5a85e;
+}
+.vst-promo-copy {
+  position:relative;
+  z-index:1;
+}
+.vst-eyebrow {
+  font-size:9px;
+  letter-spacing:2px;
+  font-weight:700;
+  color:#e2c477;
+}
+.vst-promo-copy h2 {
+  font-size:clamp(25px,3vw,36px);
+  margin:9px 0;
+  color:#fff;
+}
+.vst-promo-copy h2 em {
+  font-style:normal;
+  color:#e5c577;
+}
+.vst-promo-copy>p {
+  font-size:12px;
+  line-height:1.7;
+  color:#b8bfd0;
+}
+.vst-tags {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:13px 0;
+}
+.vst-tags span {
+  font-size:8px;
+  letter-spacing:1px;
+  padding:7px 9px;
+  border-radius:20px;
+  border:1px solid #d4b15d55;
+  color:#e4c779;
+  background:#d4b15d12;
+}
+.vst-disclaimer {
+  font-size:9px!important;
+  color:#8994ac!important;
+}
+.vst-market-btn {
+  border:1px solid #e1c16e;
+  background:linear-gradient(100deg,#b88a35,#e2c477);
+  color:#171321;
+  padding:11px 16px;
+  border-radius:9px;
+  font-weight:700;
+  font-size:11px;
+  margin-top:5px;
+}
+.vst-market-btn:hover {
+  transform:translateY(-2px);
+  box-shadow:0 8px 25px #d5a43d44;
+}
+.vst-promo-landing {
+  grid-template-columns:105px 1fr;
+  gap:13px;
+  margin:0 0 22px;
+  padding:15px;
+}
+.vst-promo-landing .vst-promo-art {
+  min-height:110px;
+}
+.vst-promo-landing .vst-coin-mark {
+  width:76px;
+  height:76px;
+  font-size:38px;
+}
+.vst-promo-landing .vst-orbit {
+  width:105px;
+  height:105px;
+}
+.vst-promo-landing .vst-promo-copy h2 {
+  font-size:23px;
+  margin:5px 0;
+}
+.vst-promo-landing .vst-promo-copy>p {
+  font-size:10px;
+  margin:5px 0;
+}
+.vst-promo-landing .vst-tags {
+  margin:7px 0;
+}
+.vst-promo-landing .vst-disclaimer {
+  font-size:8px!important;
+}
+.vst-create-btn {
+  display:inline-block;
+  margin-top:5px;
+  border:1px solid #e1c16e;
+  background:linear-gradient(100deg,#b88a35,#e2c477);
+  color:#171321;
+  padding:9px 12px;
+  border-radius:8px;
+  font-size:10px;
+  font-weight:700;
+  cursor:pointer;
+}
+@media(max-width:850px) {
+  .vst-promo {
+    grid-template-columns:125px 1fr;
+    gap:13px;
+    padding:16px;
+  }
+  .vst-coin-mark {
+    width:85px;
+    height:85px;
+    font-size:42px;
+  }
+  .vst-orbit {
+    width:120px;
+    height:120px;
+  }
+}
+@media(max-width:560px) {
+  .vst-promo,.vst-promo-landing {
+    grid-template-columns:1fr;
+    gap:7px;
+    padding:17px;
+  }
+  .vst-promo-art {
+    min-height:125px;
+  }
+  .vst-promo-landing .vst-promo-art {
+    min-height:105px;
+  }
+  .vst-promo-copy h2 {
+    font-size:25px;
+  }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0"></script>
+</head>
+
+<body>
+<div class="glow g1"></div>
+<div class="glow g2"></div>
+<div id="toast"></div>
+
+<!-- LOGIN AND SIGNUP -->
+<main id="auth" class="auth">
+
+  <section class="pitch">
+    <a class="brand"><b>V</b> VESTORA</a>
+    <div>
+      <small>THE FUTURE OF DIGITAL FINANCE</small>
+      <h1>Make your next<br><em>move matter.</em></h1>
+      <p>A clear view of your financial world, digital assets and account activity.</p>
+      <div class="orb"><span>V</span></div>
+    </div>
+    <footer>© 2026 VESTORA</footer>
+  </section>
+
+  <section class="authside">
+    <div class="card">
+
+      <div class="brand mobile"><b>V</b> VESTORA</div>
+
+      <div class="tabs">
+        <button class="selected" data-tab="login">Log in</button>
+        <button data-tab="signup">Create account</button>
+      </div>
+
+      <div id="login" class="form">
+        <small>WELCOME BACK</small>
+        <h2>Sign in to your space</h2>
+        <p>Your financial overview is one step away.</p>
+
+        <label>Email address
+          <input id="liEmail" type="email" autocomplete="email" placeholder="you@example.com">
+        </label>
+
+        <label>Password
+          <input id="liPass" type="password" autocomplete="current-password" placeholder="Your password">
+        </label>
+
+        <button id="loginBtn" class="primary">Log in ↗</button>
+        <button id="passkeyLoginBtn" class="secondary">Sign in with Face ID / Fingerprint</button>
+        <button id="forgot" class="link">Forgot password?</button>
+        <p class="fine">Passkey sign-in may use Face ID, fingerprint, device PIN or a security key.</p>
+      </div>
+
+      <div id="signup" class="form hide">
+        <small>START YOUR JOURNEY</small>
+        <h2>Create your account</h2>
+        <p>Set up your VESTORA account.</p>
+
+        <label>Full name
+          <input id="suName" placeholder="Your full name">
+        </label>
+
+        <label>Username
+          <input id="suUser" placeholder="Choose a username">
+        </label>
+
+        <label>Email address
+          <input id="suEmail" type="email" placeholder="you@example.com">
+        </label>
+
+        <label>Password
+          <input id="suPass" type="password" minlength="8" placeholder="At least 8 characters">
+        </label>
+
+        <button id="signupBtn" class="primary">Create account ↗</button>
+        <p class="fine">By creating an account, you agree to use VESTORA in accordance with its terms and applicable laws.</p>
+      </div>
+
+      <div id="reset" class="form hide">
+        <small>ACCOUNT RECOVERY</small>
+        <h2>Reset password</h2>
+        <p>We'll email you a password reset link.</p>
+
+        <label>Email address
+          <input id="reEmail" type="email" placeholder="you@example.com">
+        </label>
+
+        <button id="resetBtn" class="primary">Send reset link</button>
+        <button id="back" class="link">Back to log in</button>
+      </div>
+
+      <div class="secure">● Secure sign-in powered by Supabase</div>
+    </div>
+  </section>
+</main>
+
+<!-- MAIN APPLICATION -->
+<main id="app" class="app hide">
+
+  <aside>
+    <a class="brand"><b>V</b> VESTORA</a>
+    <small class="sidehead">WORKSPACE</small>
+    <nav>
+      <button class="active" data-page="overview">⌂　Overview</button>
+      <button data-page="markets">⌁　Markets</button>
+      <button data-page="wallet">▣　Wallet & deposits</button>
+      <button data-page="activity">↗　Activity</button>
+      <button id="adminNav" class="hide" data-page="admin">⚙　Admin panel</button>
+    </nav>
+  </aside>
+
+  <section class="work">
+
+    <header>
+      <div>
+        <small>YOUR FINANCIAL OVERVIEW</small>
+        <h2 id="title">Overview</h2>
+      </div>
+      <button id="logout" class="header-logout">⇥ Log out</button>
+      <span id="avatar">V</span>
+    </header>
+
+    <div class="content">
+
+      <!-- OVERVIEW -->
+      <section id="overview" class="page">
+
+        <div class="welcome">
+          <div>
+            <h1>Welcome, <span id="name">there</span>.</h1>
+            <p>Your VESTORA account at a glance.</p>
+          </div>
+          <small id="date"></small>
+        </div>
+
+        <!-- FEATURED VST COIN -->
+        <section class="vst-promo vst-promo-home">
+          <div class="vst-promo-art">
+            <span class="vst-orbit"></span>
+            <span class="vst-coin-mark">V</span>
+            <small>THE VESTORA ECOSYSTEM</small>
+          </div>
+
+          <div class="vst-promo-copy">
+            <span class="vst-eyebrow">✦ VESTORA'S FEATURED COIN</span>
+            <h2>VST <em>— Your platform's coin.</em></h2>
+            <p>
+              Get to know the official internal coin of VESTORA.
+              Discover its role in the platform and explore its details.
+            </p>
+
+            <div class="vst-tags">
+              <span>OFFICIAL COIN</span>
+              <span>INTERNAL ASSET</span>
+            </div>
+
+            <p class="vst-disclaimer">
+              VST is not currently publicly traded. No public price,
+              trading volume or independent rating is being claimed.
+            </p>
+
+            <button type="button" class="vst-market-btn" data-go="markets">
+              Explore VST in Markets ↗
+            </button>
+          </div>
+        </section>
+
+        <div class="notice">
+          <b>Account and transaction status</b>
+          <p>
+            Only deposits that have been independently verified and approved
+            by an authorised administrator can be credited. Never send funds
+            until you have confirmed the receiving address and network.
+          </p>
+        </div>
+
+        <div class="notice">
+          <b>🔐 Secure your account with a passkey</b>
+          <p>
+            Your device may use Face ID, fingerprint, PIN or a security key.
+            VESTORA does not receive your biometric data.
+          </p>
+          <button id="registerPasskeyBtn" class="primary compact">
+            Set up Face ID / Fingerprint
+          </button>
+        </div>
+
+        <div class="stats">
+          <article class="featured">
+            <small>USD WALLET BALANCE</small>
+            <h2 id="balance">$0.00</h2>
+            <p>Available wallet balance</p>
+          </article>
+          <article>
+            <small>ACCOUNT</small>
+            <h2 id="accountStatus">Active</h2>
+            <p>Signed-in profile</p>
+          </article>
+          <article>
+            <small>CRYPTO ASSETS</small>
+            <h2>10</h2>
+            <p>Market watchlist</p>
+          </article>
+        </div>
+
+        <h3>Explore VESTORA</h3>
+        <div class="quick">
+          <button data-go="wallet">▣<b>Wallet & deposits</b><small>View deposit options ↗</small></button>
+          <button data-go="markets">⌁<b>Crypto markets</b><small>Market data status ↗</small></button>
+          <button data-go="activity">↗<b>Recent activity</b><small>Review transactions ↗</small></button>
+        </div>
+      </section>
+
+      <!-- MARKETS -->
+      <section id="markets" class="page hide vestora-markets">
+        <div class="market-heading">
+          <div>
+            <small>SPOT MARKET OVERVIEW</small>
+            <h1>Markets</h1>
+            <p>Explore digital asset prices and market movements.</p>
+          </div>
+          <span class="market-live"><i></i> LIVE MARKET DATA</span>
+        </div>
+
+        <div class="market-ticker">
+          <span>BTC <b id="tickerBTC">—</b></span>
+          <span>ETH <b id="tickerETH">—</b></span>
+          <span>BNB <b id="tickerBNB">—</b></span>
+          <span>SOL <b id="tickerSOL">—</b></span>
+        </div>
+
+        <div class="market-layout">
+          <section class="market-main">
+            <div class="market-pair-head">
+              <div class="market-coin-title">
+                <img id="marketCoinLogo" src="https://assets.coincap.io/assets/icons/btc@2x.png" alt="Bitcoin logo">
+                <div>
+                  <h2 id="marketPairTitle">BTC / USDT</h2>
+                  <small id="marketCoinName">Bitcoin · Spot market</small>
+                </div>
+              </div>
+              <div class="market-current">
+                <strong id="marketCurrentPrice">Loading…</strong>
+                <span id="marketPriceChange">Fetching market data</span>
+              </div>
+            </div>
+
+            <div class="market-stats">
+              <div><small>24H HIGH</small><b id="marketHigh">—</b></div>
+              <div><small>24H LOW</small><b id="marketLow">—</b></div>
+              <div><small>24H VOLUME</small><b id="marketVolume">—</b></div>
+              <div><small>24H CHANGE</small><b id="marketChangeStat">—</b></div>
+            </div>
+
+            <div class="chart-toolbar">
+              <div id="chartIntervals">
+                <button class="selected" data-interval="1m">1m</button>
+                <button data-interval="5m">5m</button>
+                <button data-interval="15m">15m</button>
+                <button data-interval="1h">1H</button>
+                <button data-interval="4h">4H</button>
+                <button data-interval="1d">1D</button>
+              </div>
+              <span>Price chart · USD</span>
+            </div>
+
+            <div id="vestoraPriceChart" class="market-chart">
+              <div class="chart-loading">Loading price chart…</div>
+            </div>
+
+            <div class="market-chart-foot">
+              <span>Data source: Binance historical data and Bybit live trade feed</span>
+              <span>Market information only · No trading</span>
+            </div>
+          </section>
+
+          <aside class="market-side">
+            <div class="market-list-head">
+              <div><h3>Spot markets</h3><small>Prices in USDT</small></div>
+              <button id="marketWatchToggle" class="watch-toggle">☆ Watchlist</button>
+            </div>
+
+            <label class="market-search">
+              <span>⌕</span>
+              <input id="marketSearch" type="search" placeholder="Search coin or pair">
+            </label>
+
+            <div class="market-table-head">
+              <span>ASSET / PAIR</span>
+              <span>LAST PRICE</span>
+              <span>24H</span>
+            </div>
+
+            <div id="marketCoinRows">
+              <div class="chart-loading">Loading markets…</div>
+            </div>
+          </aside>
+        </div>
+
+        <p id="marketStatus" class="market-status">
+          Connecting to live public market data…
+        </p>
+      </section>
+
+      <!-- WALLET -->
+      <section id="wallet" class="page hide">
+        <small>YOUR ACCOUNT</small>
+        <h1>Wallet & deposits</h1>
+
+        <div class="wallet">
+          <small>AVAILABLE USD BALANCE</small>
+          <h2 id="balance2">$0.00</h2>
+          <span class="pill">USD WALLET</span>
+        </div>
+
+        <div class="notice">
+          <b>Deposit processing</b>
+          <p>
+            Deposit requests are recorded for administrator review.
+            A submitted transaction hash is not proof of payment.
+            An administrator must independently verify the transaction
+            on the correct blockchain before approving a credit.
+          </p>
+        </div>
+
+        <div class="panel">
+          <h3>Submit a deposit transaction</h3>
+
+          <label>Network
+            <select id="depositNetwork">
+              <option value="BTC_MAINNET">Bitcoin Mainnet (BTC)</option>
+              <option value="BNB_SMART_CHAIN">BNB Smart Chain (BEP20)</option>
+            </select>
+          </label>
+
+          <label>Amount sent
+            <input id="depositAmount" type="number" min="0" step="any" placeholder="Amount in BTC or BNB">
+          </label>
+
+          <label>Transaction hash
+            <input id="depositHash" placeholder="Paste the blockchain transaction hash">
+          </label>
+
+          <button id="submitDeposit" class="primary">Submit for review</button>
+        </div>
+
+        <div class="panel">
+          <h3>Receiving addresses</h3>
+          <p class="fine">
+            Confirm the address and network with VESTORA support before transferring funds.
+            Sending assets on the wrong network may result in permanent loss.
+          </p>
+
+          <div class="address">
+            <b>BTC · Bitcoin Mainnet</b>
+            <code>bc1qyw5hj746zg6h9cwv1wzj3mfaacus5fnepldz0u</code>
+            <button class="copy" data-copy="bc1qyw5hj746zg6h9cwv1wzj3mfaacus5fnepldz0u">Copy</button>
+          </div>
+
+          <div class="address">
+            <b>BNB · BNB Smart Chain (BEP20)</b>
+            <code>0x8D976805B946da236Ae4f52b0fb58dd55AFC5DB8</code>
+            <button class="copy" data-copy="0x8D976805B946da236Ae4f52b0fb58dd55AFC5DB8">Copy</button>
+          </div>
+        </div>
+
+        <div class="table">
+          <h3>My deposit requests</h3>
+          <table>
+            <thead>
+              <tr><th>Asset</th><th>Amount</th><th>Status</th><th>Submitted</th></tr>
+            </thead>
+            <tbody id="depositRows">
+              <tr><td colspan="4">No deposit requests.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ACTIVITY -->
+      <section id="activity" class="page hide">
+        <small>ACCOUNT TIMELINE</small>
+        <h1>Activity</h1>
+        <div class="table">
+          <h3>Recent transactions</h3>
+          <table>
+            <thead>
+              <tr><th>Type</th><th>Description</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody id="activityRows">
+              <tr><td colspan="4">No activity yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ADMIN -->
+      <section id="admin" class="page hide">
+        <div id="adminDashboardHome" class="admin-dashboard-home">
+          <small>VESTORA CONTROL CENTRE</small>
+          <h1>Admin Dashboard</h1>
+          <p class="admin-dashboard-intro">Choose a management area to continue.</p>
+
+          <div class="admin-dashboard-grid">
+            <button type="button" class="admin-dashboard-card" data-admin-view="deposits">
+              <span class="admin-card-icon">⇩</span>
+              <span class="admin-card-copy">
+                <strong>Pending Deposits</strong>
+                <small>Review deposit requests and manage approvals</small>
+              </span>
+              <span class="admin-card-arrow">↗</span>
+            </button>
+
+            <button type="button" class="admin-dashboard-card" data-admin-view="balance">
+              <span class="admin-card-icon">＄</span>
+              <span class="admin-card-copy">
+                <strong>Balance Management</strong>
+                <small>Find a customer and adjust their USD or VST balance</small>
+              </span>
+              <span class="admin-card-arrow">↗</span>
+            </button>
+
+            <button type="button" class="admin-dashboard-card" data-admin-view="history">
+              <span class="admin-card-icon">≡</span>
+              <span class="admin-card-copy">
+                <strong>Balance Adjustment History</strong>
+                <small>Review the recorded admin balance changes</small>
+              </span>
+              <span class="admin-card-arrow">↗</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- PENDING DEPOSITS -->
+        <section id="adminViewDeposits" class="admin-subview hide">
+          <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
+          <small>DEPOSIT CONTROL</small>
+          <h1>Pending Deposits</h1>
+          <div class="notice">
+            <b>Manual verification required</b>
+            <p>
+              Before approval, independently inspect the transaction on the correct blockchain explorer,
+              confirm the receiving address, asset, amount, confirmations and that the transaction has
+              not already been credited. This interface does not automatically monitor blockchains.
+            </p>
+          </div>
+          <div class="table">
+            <h3>Deposit requests awaiting review</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th><th>Network / asset</th><th>Amount</th><th>Transaction hash</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminDeposits">
+                <tr><td colspan="5">No pending requests.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- CUSTOMER BALANCE MANAGEMENT -->
+        <section id="adminViewBalance" class="admin-subview hide">
+          <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
+          <small>ACCOUNT CONTROLS</small>
+          <h1>Balance Management</h1>
+          <div class="panel admin-balance-panel">
+            <h3>Customer Balance Management</h3>
+            <label>Search customer by name or username
+              <input id="balanceCustomerSearch" type="search" placeholder="Enter customer name or username">
+            </label>
+            <button id="balanceCustomerSearchBtn" class="primary compact">Search Customers</button>
+            <div id="balanceCustomerResults" class="balance-customer-results"></div>
+
+            <div id="balanceCustomerSelected" class="balance-customer-selected hide">
+              <h3 id="balanceCustomerName"></h3>
+              <p id="balanceCustomerUsername"></p>
+              <div class="balance-customer-balances">
+                <div><small>USD BALANCE</small><strong id="adminUsdBalance">$0.00</strong></div>
+                <div><small>VST BALANCE</small><strong id="adminVstBalance">0 VST</strong></div>
+              </div>
+              <label>Currency
+                <select id="balanceCurrency">
+                  <option value="USD">USD</option>
+                  <option value="VST">VST</option>
+                </select>
+              </label>
+              <label>Adjustment
+                <select id="balanceAdjustmentType">
+                  <option value="credit">Credit</option>
+                  <option value="debit">Debit</option>
+                </select>
+              </label>
+              <label>Amount
+                <input id="balanceAdjustmentAmount" type="number" min="0" step="any" placeholder="Enter amount">
+              </label>
+              <label>Reason
+                <input id="balanceAdjustmentReason" type="text" placeholder="Reason for adjustment">
+              </label>
+              <button id="applyBalanceAdjustment" class="primary compact" disabled>Review and Apply Adjustment</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- BALANCE ADJUSTMENT AUDIT HISTORY -->
+        <section id="adminViewHistory" class="admin-subview hide">
+          <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
+          <small>ADMIN AUDIT</small>
+          <h1>Balance Adjustment History</h1>
+          <div class="table balance-adjustment-history">
+            <h3>Recorded balance changes</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th><th>Customer</th><th>Admin</th><th>Currency</th>
+                  <th>Action</th><th>Amount</th><th>Before</th><th>After</th><th>Reason</th>
+                </tr>
+              </thead>
+              <tbody id="balanceAdjustmentLogs">
+                <tr><td colspan="9">No records yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+    </div>
+
+    <footer class="appfooter">
+      VESTORA · Digital asset services involve risk. Verify all transaction details before sending funds.
+    </footer>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="markets.js"></script>
+<script src="app.js"></script>
+<script src="vestora-settings.js"></script>
+
+</body>
+</html>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
