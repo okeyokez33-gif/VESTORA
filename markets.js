@@ -74,10 +74,19 @@
   let candleRequest=0;
   let resizeObserver=null;
 
+  // SELECTED COIN CONNECTION
   let liveSocket=null;
   let reconnectTimer=null;
   let heartbeatTimer=null;
   let socketGeneration=0;
+
+  // ALL COIN PRICE CONNECTION
+  let marketSocket=null;
+  let marketReconnectTimer=null;
+  let marketHeartbeatTimer=null;
+  let marketSocketGeneration=0;
+  let marketSubscriptionSignature="";
+  let marketReconnectAttempts=0;
 
   let tickerPromise=null;
   let priceSource="Bybit";
@@ -183,6 +192,42 @@
     return map[value]||"1";
   }
 
+  // UPDATE A TICKER FROM BYBIT DATA
+
+  function applyTicker(item){
+    if(!item||!item.symbol)return;
+
+    const price=Number(item.lastPrice);
+
+    if(!Number.isFinite(price)||price<=0)return;
+
+    const existing=tickers[item.symbol]||{
+      symbol:item.symbol
+    };
+
+    existing.lastPrice=String(price);
+
+    const change=Number(item.price24hPcnt);
+
+    if(Number.isFinite(change)){
+      existing.priceChangePercent=String(change*100);
+    }
+
+    if(item.highPrice24h){
+      existing.highPrice=String(item.highPrice24h);
+    }
+
+    if(item.lowPrice24h){
+      existing.lowPrice=String(item.lowPrice24h);
+    }
+
+    if(item.turnover24h){
+      existing.quoteVolume=String(item.turnover24h);
+    }
+
+    tickers[item.symbol]=existing;
+  }
+
   // LOAD BYBIT HISTORICAL TICKERS
 
   async function loadTickers(){
@@ -244,9 +289,12 @@
         updatePair();
         renderRows();
 
+        // Start or update the all-coin live feed.
+        startAllTickerStream();
+
         setText(
           "marketStatus",
-          "Live prices updating automatically · Bybit Spot"
+          "Live market prices connected · Bybit Spot"
         );
 
         priceSource="Bybit";
@@ -275,6 +323,261 @@
     }
 
     return tickers[asset.pair]||null;
+  }
+
+  // ALL COIN LIVE TICKER WEBSOCKET
+
+  function stopAllTickerStream(){
+    marketSocketGeneration++;
+
+    if(marketSocket){
+      try{
+        marketSocket.onclose=null;
+        marketSocket.close();
+      }catch(error){}
+
+      marketSocket=null;
+    }
+
+    if(marketHeartbeatTimer){
+      clearInterval(marketHeartbeatTimer);
+      marketHeartbeatTimer=null;
+    }
+
+    if(marketReconnectTimer){
+      clearTimeout(marketReconnectTimer);
+      marketReconnectTimer=null;
+    }
+  }
+
+  function startAllTickerStream(){
+    // Only subscribe to actual USDT spot pairs returned by Bybit.
+    const availableAssets=assets.filter(a=>
+      !a.internal&&
+      a.symbol!=="USDT"&&
+      a.pair&&
+      tickers[a.pair]
+    );
+
+    const topics=availableAssets.map(a=>
+      "tickers."+a.pair
+    );
+
+    if(!topics.length){
+      console.warn("No supported Bybit spot ticker pairs found.");
+      return;
+    }
+
+    const signature=topics.join("|");
+
+    // Do not reconnect if the available market list has not changed.
+    if(
+      signature===marketSubscriptionSignature&&
+      marketSocket&&
+      (
+        marketSocket.readyState===WebSocket.OPEN||
+        marketSocket.readyState===WebSocket.CONNECTING
+      )
+    ){
+      return;
+    }
+
+    marketSubscriptionSignature=signature;
+
+    stopAllTickerStream();
+
+    const generation=marketSocketGeneration;
+
+    try{
+      marketSocket=new WebSocket(BYBIT_WS);
+    }catch(error){
+      console.error("All-market WebSocket error:",error);
+      scheduleMarketReconnect();
+      return;
+    }
+
+    marketSocket.onopen=()=>{
+      if(generation!==marketSocketGeneration)return;
+
+      marketReconnectAttempts=0;
+
+      // Bybit Spot allows a maximum of 10 topics
+      // in each subscription request.
+      const batches=[];
+
+      for(let i=0;i<topics.length;i+=10){
+        batches.push(topics.slice(i,i+10));
+      }
+
+      batches.forEach((batch,index)=>{
+        setTimeout(()=>{
+          if(
+            generation!==marketSocketGeneration||
+            !marketSocket||
+            marketSocket.readyState!==WebSocket.OPEN
+          ){
+            return;
+          }
+
+          marketSocket.send(JSON.stringify({
+            op:"subscribe",
+            args:batch
+          }));
+
+        },index*100);
+      });
+
+      marketHeartbeatTimer=setInterval(()=>{
+        if(
+          marketSocket&&
+          marketSocket.readyState===WebSocket.OPEN
+        ){
+          marketSocket.send(JSON.stringify({
+            op:"ping"
+          }));
+        }
+      },20000);
+
+      setText(
+        "marketStatus",
+        "Connecting live prices for "+topics.length+" Bybit markets…"
+      );
+    };
+
+    marketSocket.onmessage=event=>{
+      if(generation!==marketSocketGeneration)return;
+
+      try{
+        const message=JSON.parse(event.data);
+
+        if(message.op==="subscribe"){
+          if(message.success===false){
+            console.warn(
+              "Bybit ticker subscription failed:",
+              message.ret_msg
+            );
+          }
+          return;
+        }
+
+        if(
+          typeof message.topic==="string"&&
+          message.topic.startsWith("tickers.")
+        ){
+          if(Array.isArray(message.data)){
+            message.data.forEach(applyTicker);
+          }else if(message.data){
+            applyTicker(message.data);
+          }
+        }
+
+      }catch(error){
+        console.error(
+          "All-market ticker message error:",
+          error
+        );
+      }
+    };
+
+    marketSocket.onerror=error=>{
+      if(generation===marketSocketGeneration){
+        console.warn("All-market WebSocket interrupted:",error);
+      }
+    };
+
+    marketSocket.onclose=()=>{
+      if(generation!==marketSocketGeneration)return;
+
+      if(marketHeartbeatTimer){
+        clearInterval(marketHeartbeatTimer);
+        marketHeartbeatTimer=null;
+      }
+
+      scheduleMarketReconnect();
+    };
+  }
+
+  function scheduleMarketReconnect(){
+    if(marketReconnectTimer){
+      clearTimeout(marketReconnectTimer);
+    }
+
+    marketReconnectAttempts++;
+
+    const delay=Math.min(
+      15000,
+      2000*marketReconnectAttempts
+    );
+
+    setText(
+      "marketStatus",
+      "Bybit market feed reconnecting…"
+    );
+
+    marketReconnectTimer=setTimeout(()=>{
+      if(
+        $("marketCoinRows")&&
+        Object.keys(tickers).length
+      ){
+        marketSubscriptionSignature="";
+        startAllTickerStream();
+      }
+    },delay);
+  }
+
+  // 500MS DISPLAY REFRESH
+  // This updates the screen using the newest received data.
+  // It does not create artificial market prices.
+
+  function refreshVisiblePrices(){
+    const container=$("marketCoinRows");
+
+    if(container){
+      container.querySelectorAll(
+        ".market-coin-row[data-coin]"
+      ).forEach(row=>{
+        const symbol=row.dataset.coin;
+        const asset=pairFor(symbol);
+
+        if(!asset||asset.internal)return;
+
+        const ticker=tickerFor(asset);
+
+        const priceEl=row.querySelector(
+          ".market-row-price"
+        );
+
+        const changeEl=row.querySelector(
+          ".market-row-change"
+        );
+
+        if(!ticker)return;
+
+        const price=Number(ticker.lastPrice);
+        const change=Number(ticker.priceChangePercent);
+
+        if(priceEl&&Number.isFinite(price)){
+          priceEl.textContent=money(price);
+        }
+
+        if(changeEl&&Number.isFinite(change)){
+          changeEl.textContent=
+            (change>=0?"+":"")+change.toFixed(2)+"%";
+
+          changeEl.classList.toggle(
+            "positive",
+            change>=0
+          );
+
+          changeEl.classList.toggle(
+            "negative",
+            change<0
+          );
+        }
+      });
+    }
+
+    updatePair();
   }
 
   // WISHLIST
@@ -560,7 +863,7 @@
     return true;
   }
 
-  // STOP PREVIOUS WEBSOCKET
+  // STOP SELECTED COIN WEBSOCKET
 
   function stopLiveUpdates(){
     socketGeneration++;
@@ -585,7 +888,7 @@
     }
   }
 
-  // BYBIT LIVE PRICES, TRADES AND CANDLESTICKS
+  // SELECTED COIN LIVE TRADES AND CANDLESTICKS
 
   function startLiveUpdates(asset){
     stopLiveUpdates();
@@ -597,20 +900,9 @@
     const generation=socketGeneration;
     const candleInterval=bybitInterval(interval);
     const candleTopic="kline."+candleInterval+"."+asset.pair;
-    const tickerTopic="tickers."+asset.pair;
     const tradeTopic="publicTrade."+asset.pair;
 
-    let lastRowsRender=0;
     let tradeCandle=liveCandle?{...liveCandle}:null;
-
-    function renderRowsThrottled(){
-      const now=Date.now();
-
-      if(now-lastRowsRender>=250){
-        lastRowsRender=now;
-        renderRows();
-      }
-    }
 
     function candleStart(timestamp){
       const date=new Date(timestamp);
@@ -690,7 +982,6 @@
       }
 
       updatePair();
-      renderRowsThrottled();
     }
 
     try{
@@ -707,7 +998,6 @@
         op:"subscribe",
         args:[
           candleTopic,
-          tickerTopic,
           tradeTopic
         ]
       }));
@@ -725,7 +1015,7 @@
 
       setText(
         "marketStatus",
-        "Connecting to Bybit live prices, trades and candles…"
+        "Connecting to Bybit live trades and candles…"
       );
     };
 
@@ -738,52 +1028,10 @@
         if(message.op==="subscribe"){
           if(message.success===false){
             console.warn(
-              "Bybit subscription failed:",
+              "Bybit chart subscription failed:",
               message.ret_msg
             );
           }
-          return;
-        }
-
-        // FAST LIVE PRICE UPDATES
-
-        if(message.topic===tickerTopic){
-          const item=message.data;
-
-          if(item&&item.lastPrice){
-            const existing=tickers[asset.pair]||{
-              symbol:asset.pair
-            };
-
-            const price=Number(item.lastPrice);
-            const change=Number(item.price24hPcnt);
-
-            if(Number.isFinite(price)&&price>0){
-              existing.lastPrice=String(price);
-            }
-
-            if(Number.isFinite(change)){
-              existing.priceChangePercent=String(change*100);
-            }
-
-            if(item.highPrice24h){
-              existing.highPrice=String(item.highPrice24h);
-            }
-
-            if(item.lowPrice24h){
-              existing.lowPrice=String(item.lowPrice24h);
-            }
-
-            if(item.turnover24h){
-              existing.quoteVolume=String(item.turnover24h);
-            }
-
-            tickers[asset.pair]=existing;
-
-            updatePair();
-            renderRowsThrottled();
-          }
-
           return;
         }
 
@@ -841,7 +1089,7 @@
         }
 
       }catch(error){
-        console.error("Bybit live data message error:",error);
+        console.error("Bybit chart message error:",error);
       }
     };
 
@@ -849,7 +1097,7 @@
       if(generation===socketGeneration){
         setText(
           "marketStatus",
-          "Bybit live market connection interrupted"
+          "Bybit chart connection interrupted"
         );
       }
     };
@@ -864,7 +1112,7 @@
 
       setText(
         "marketStatus",
-        "Bybit disconnected · Reconnecting…"
+        "Bybit chart disconnected · Reconnecting…"
       );
 
       reconnectTimer=setTimeout(()=>{
@@ -1076,6 +1324,14 @@
     if(rows.dataset.ready){
       loadTickers();
       loadCandles();
+
+      if(!refreshTimer){
+        refreshTimer=setInterval(
+          refreshVisiblePrices,
+          500
+        );
+      }
+
       return;
     }
 
@@ -1163,11 +1419,18 @@
     loadTickers();
     loadCandles();
 
+    // REST is a backup refresh, not the live price feed.
     if(refreshTimer){
       clearInterval(refreshTimer);
     }
 
-    refreshTimer=setInterval(loadTickers,30000);
+    refreshTimer=setInterval(
+      refreshVisiblePrices,
+      500
+    );
+
+    // Keep the slower REST refresh as a fallback.
+    setInterval(loadTickers,30000);
   }
 
   window.VestoraMarkets={
