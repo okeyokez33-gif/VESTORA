@@ -631,106 +631,132 @@
 
       <!-- ADMIN -->
       <section id="admin" class="page hide">
-        <small>CONTROL CENTRE</small>
-        <h1>Admin panel</h1>
+        <div id="adminDashboardHome" class="admin-dashboard-home">
+          <small>VESTORA CONTROL CENTRE</small>
+          <h1>Admin Dashboard</h1>
+          <p class="admin-dashboard-intro">Choose a management area to continue.</p>
 
-        <div class="notice">
-          <b>Manual verification required</b>
-          <p>
-            Before approval, independently inspect the transaction on the correct blockchain explorer,
-            confirm the receiving address, asset, amount, confirmations and that the transaction has
-            not already been credited. This interface does not automatically monitor blockchains.
-          </p>
+          <div class="admin-dashboard-grid">
+            <button type="button" class="admin-dashboard-card" data-admin-view="deposits">
+              <span class="admin-card-icon">⇩</span>
+              <span class="admin-card-copy">
+                <strong>Pending Deposits</strong>
+                <small>Review deposit requests and manage approvals</small>
+              </span>
+              <span class="admin-card-arrow">↗</span>
+            </button>
+
+            <button type="button" class="admin-dashboard-card" data-admin-view="balance">
+              <span class="admin-card-icon">＄</span>
+              <span class="admin-card-copy">
+                <strong>Balance Management</strong>
+                <small>Find a customer and adjust their USD or VST balance</small>
+              </span>
+              <span class="admin-card-arrow">↗</span>
+            </button>
+
+            <button type="button" class="admin-dashboard-card" data-admin-view="history">
+              <span class="admin-card-icon">≡</span>
+              <span class="admin-card-copy">
+                <strong>Balance Adjustment History</strong>
+                <small>Review the recorded admin balance changes</small>
+              </span>
+              <span class="admin-card-arrow">↗</span>
+            </button>
+          </div>
         </div>
 
-        <div class="table">
-          <h3>Pending deposit requests</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>User</th><th>Network / asset</th><th>Amount</th><th>Transaction hash</th><th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="adminDeposits">
-              <tr><td colspan="5">No pending requests.</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <!-- PENDING DEPOSITS -->
+        <section id="adminViewDeposits" class="admin-subview hide">
+          <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
+          <small>DEPOSIT CONTROL</small>
+          <h1>Pending Deposits</h1>
+          <div class="notice">
+            <b>Manual verification required</b>
+            <p>
+              Before approval, independently inspect the transaction on the correct blockchain explorer,
+              confirm the receiving address, asset, amount, confirmations and that the transaction has
+              not already been credited. This interface does not automatically monitor blockchains.
+            </p>
+          </div>
+          <div class="table">
+            <h3>Deposit requests awaiting review</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th><th>Network / asset</th><th>Amount</th><th>Transaction hash</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminDeposits">
+                <tr><td colspan="5">No pending requests.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <!-- CUSTOMER BALANCE MANAGEMENT -->
-        <div class="panel admin-balance-panel">
-          <h3>Customer Balance Management</h3>
+        <section id="adminViewBalance" class="admin-subview hide">
+          <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
+          <small>ACCOUNT CONTROLS</small>
+          <h1>Balance Management</h1>
+          <div class="panel admin-balance-panel">
+            <h3>Customer Balance Management</h3>
+            <label>Search customer by name or username
+              <input id="balanceCustomerSearch" type="search" placeholder="Enter customer name or username">
+            </label>
+            <button id="balanceCustomerSearchBtn" class="primary compact">Search Customers</button>
+            <div id="balanceCustomerResults" class="balance-customer-results"></div>
 
-          <label>Search customer by name or username
-            <input id="balanceCustomerSearch" type="search"
-              placeholder="Enter customer name or username">
-          </label>
-
-          <button id="balanceCustomerSearchBtn" class="primary compact">
-            Search Customers
-          </button>
-
-          <div id="balanceCustomerResults"></div>
-
-          <div id="balanceCustomerSelected" class="hide">
-            <h3 id="balanceCustomerName"></h3>
-            <p id="balanceCustomerUsername"></p>
-
-            <p>USD Balance: <strong id="adminUsdBalance">$0.00</strong></p>
-            <p>VST Balance: <strong id="adminVstBalance">0 VST</strong></p>
+            <div id="balanceCustomerSelected" class="balance-customer-selected hide">
+              <h3 id="balanceCustomerName"></h3>
+              <p id="balanceCustomerUsername"></p>
+              <div class="balance-customer-balances">
+                <div><small>USD BALANCE</small><strong id="adminUsdBalance">$0.00</strong></div>
+                <div><small>VST BALANCE</small><strong id="adminVstBalance">0 VST</strong></div>
+              </div>
+              <label>Currency
+                <select id="balanceCurrency">
+                  <option value="USD">USD</option>
+                  <option value="VST">VST</option>
+                </select>
+              </label>
+              <label>Adjustment
+                <select id="balanceAdjustmentType">
+                  <option value="credit">Credit</option>
+                  <option value="debit">Debit</option>
+                </select>
+              </label>
+              <label>Amount
+                <input id="balanceAdjustmentAmount" type="number" min="0" step="any" placeholder="Enter amount">
+              </label>
+              <label>Reason
+                <input id="balanceAdjustmentReason" type="text" placeholder="Reason for adjustment">
+              </label>
+              <button id="applyBalanceAdjustment" class="primary compact" disabled>Review and Apply Adjustment</button>
+            </div>
           </div>
-
-          <label>Currency
-            <select id="balanceCurrency">
-              <option value="USD">USD</option>
-              <option value="VST">VST</option>
-            </select>
-          </label>
-
-          <label>Adjustment
-            <select id="balanceAdjustmentType">
-              <option value="credit">Credit</option>
-              <option value="debit">Debit</option>
-            </select>
-          </label>
-
-          <label>Amount
-            <input id="balanceAdjustmentAmount" type="number"
-              min="0" step="any" placeholder="Enter amount">
-          </label>
-
-          <label>Reason
-            <input id="balanceAdjustmentReason" type="text"
-              placeholder="Reason for adjustment">
-          </label>
-
-          <button id="applyBalanceAdjustment" class="primary compact" disabled>
-            Review and Apply Adjustment
-          </button>
-        </div>
+        </section>
 
         <!-- BALANCE ADJUSTMENT AUDIT HISTORY -->
-        <div class="table">
-          <h3>Balance Adjustment History</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>Admin</th>
-                <th>Currency</th>
-                <th>Action</th>
-                <th>Amount</th>
-                <th>Before</th>
-                <th>After</th>
-                <th>Reason</th>
-              </tr>
-            </thead>
-            <tbody id="balanceAdjustmentLogs">
-              <tr><td colspan="9">No records yet.</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <section id="adminViewHistory" class="admin-subview hide">
+          <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
+          <small>ADMIN AUDIT</small>
+          <h1>Balance Adjustment History</h1>
+          <div class="table balance-adjustment-history">
+            <h3>Recorded balance changes</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th><th>Customer</th><th>Admin</th><th>Currency</th>
+                  <th>Action</th><th>Amount</th><th>Before</th><th>After</th><th>Reason</th>
+                </tr>
+              </thead>
+              <tbody id="balanceAdjustmentLogs">
+                <tr><td colspan="9">No records yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </section>
 
     </div>
