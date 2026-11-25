@@ -1,663 +1,706 @@
-(() => {
-  "use strict";
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080b18">
+<title>VESTORA</title>
 
-  const assets = [
-    {symbol:"BTC",name:"Bitcoin",pair:"BTCUSDT",icon:"btc"},
-    {symbol:"ETH",name:"Ethereum",pair:"ETHUSDT",icon:"eth"},
-    {symbol:"BNB",name:"BNB",pair:"BNBUSDT",icon:"bnb"},
-    {symbol:"SOL",name:"Solana",pair:"SOLUSDT",icon:"sol"},
-    {symbol:"XRP",name:"XRP",pair:"XRPUSDT",icon:"xrp"},
-    {symbol:"USDT",name:"Tether",pair:"USDCUSDT",icon:"usdt",stable:true},
-    {symbol:"USDC",name:"USD Coin",pair:"USDCUSDT",icon:"usdc"},
-    {symbol:"TRX",name:"TRON",pair:"TRXUSDT",icon:"trx"},
-    {symbol:"DOGE",name:"Dogecoin",pair:"DOGEUSDT",icon:"doge"},
-    {symbol:"ADA",name:"Cardano",pair:"ADAUSDT",icon:"ada"},
-    {symbol:"VST",name:"Vestora Coin",internal:true}
-  ];
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  const API_HOSTS = [
-    "https://api.binance.com",
-    "https://api1.binance.com",
-    "https://api2.binance.com",
-    "https://api3.binance.com",
-    "https://api4.binance.com",
-    "https://api-gcp.binance.com",
-    "https://data-api.binance.vision"
-  ];
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="markets.css">
+<link rel="stylesheet" href="vestora-luxury.css">
 
-  const $ = id => document.getElementById(id);
-
-  let selected = "BTC";
-  let interval = "1m";
-  let tickers = {};
-  let chart = null;
-  let candleSeries = null;
-  let watchOnly = false;
-  let watch = new Set();
-  let refreshTimer = null;
-  let candleRequest = 0;
-  let preferredHost = null;
-
-  let liveSocket = null;
-  let liveFlushTimer = null;
-  let reconnectTimer = null;
-  let socketGeneration = 0;
-  let liveCandle = null;
-  let pendingCandle = null;
-
-  const fmt = n => !Number.isFinite(n) ? "—" :
-    n >= 1000 ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) :
-    n >= 1 ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:4}) :
-    n.toLocaleString("en-US",{minimumFractionDigits:4,maximumFractionDigits:6});
-
-  const money = n => "$" + fmt(n);
-  const icon = a => "https://assets.coincap.io/assets/icons/" + (a.icon || "vst") + "@2x.png";
-  const pairFor = s => assets.find(a => a.symbol === s) || assets[0];
-
-  function setText(id,value) {
-    const el=$(id);
-    if(el) el.textContent=value;
+<style>
+.vst-promo {
+  position:relative;
+  display:grid;
+  grid-template-columns:180px 1fr;
+  gap:22px;
+  align-items:center;
+  overflow:hidden;
+  margin:22px 0;
+  padding:22px;
+  border:1px solid #c9a85a66;
+  border-radius:18px;
+  background:
+    radial-gradient(ellipse at 8% 45%,#b98a2c25,transparent 48%),
+    linear-gradient(120deg,#17182a,#111b2d 60%,#1b1930);
+  box-shadow:0 18px 55px #0005;
+}
+.vst-promo:after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(110deg,transparent 35%,#e4c16a10 50%,transparent 68%);
+}
+.vst-promo-art {
+  position:relative;
+  min-height:155px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:13px;
+}
+.vst-coin-mark {
+  z-index:1;
+  width:105px;
+  height:105px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  font:700 52px 'Space Grotesk';
+  color:#231a09;
+  background:radial-gradient(circle at 35% 28%,#fff0b7,#d7aa4d 48%,#825d20);
+  border:5px double #f7dc91;
+  box-shadow:0 0 35px #d5a43d66,inset 0 0 14px #fff8;
+}
+.vst-orbit {
+  position:absolute;
+  width:145px;
+  height:145px;
+  border:1px solid #d6b15c66;
+  border-radius:50%;
+  transform:rotate(-25deg) scaleY(.45);
+  animation:vstOrbit 12s linear infinite;
+}
+@keyframes vstOrbit {
+  to {transform:rotate(335deg) scaleY(.45)}
+}
+.vst-promo-art small {
+  font-size:8px;
+  letter-spacing:2px;
+  color:#c5a85e;
+}
+.vst-promo-copy {
+  position:relative;
+  z-index:1;
+}
+.vst-eyebrow {
+  font-size:9px;
+  letter-spacing:2px;
+  font-weight:700;
+  color:#e2c477;
+}
+.vst-promo-copy h2 {
+  font-size:clamp(25px,3vw,36px);
+  margin:9px 0;
+  color:#fff;
+}
+.vst-promo-copy h2 em {
+  font-style:normal;
+  color:#e5c577;
+}
+.vst-promo-copy>p {
+  font-size:12px;
+  line-height:1.7;
+  color:#b8bfd0;
+}
+.vst-tags {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:13px 0;
+}
+.vst-tags span {
+  font-size:8px;
+  letter-spacing:1px;
+  padding:7px 9px;
+  border-radius:20px;
+  border:1px solid #d4b15d55;
+  color:#e4c779;
+  background:#d4b15d12;
+}
+.vst-disclaimer {
+  font-size:9px!important;
+  color:#8994ac!important;
+}
+.vst-market-btn {
+  border:1px solid #e1c16e;
+  background:linear-gradient(100deg,#b88a35,#e2c477);
+  color:#171321;
+  padding:11px 16px;
+  border-radius:9px;
+  font-weight:700;
+  font-size:11px;
+  margin-top:5px;
+}
+.vst-market-btn:hover {
+  transform:translateY(-2px);
+  box-shadow:0 8px 25px #d5a43d44;
+}
+@media(max-width:850px) {
+  .vst-promo {
+    grid-template-columns:125px 1fr;
+    gap:13px;
+    padding:16px;
   }
-
-  // FAST HISTORICAL MARKET DATA CONNECTION
-  async function fetchFromHosts(path) {
-    const hosts = preferredHost
-      ? [preferredHost,...API_HOSTS.filter(h => h !== preferredHost)]
-      : API_HOSTS;
-
-    const controllers = [];
-
-    const attempts = hosts.map(host => new Promise(async (resolve,reject) => {
-      const controller = new AbortController();
-      controllers.push(controller);
-
-      const timeout = setTimeout(() => controller.abort(),4500);
-
-      try {
-        const response = await fetch(host + path,{
-          method:"GET",
-          mode:"cors",
-          cache:"no-store",
-          headers:{"Accept":"application/json"},
-          signal:controller.signal
-        });
-
-        if(!response.ok) throw new Error("HTTP " + response.status);
-
-        const data = await response.json();
-        preferredHost = host;
-        resolve(data);
-
-      } catch(error) {
-        reject(error);
-      } finally {
-        clearTimeout(timeout);
-      }
-    }));
-
-    try {
-      const result = await Promise.any(attempts);
-      controllers.forEach(controller => controller.abort());
-      return result;
-    } catch(error) {
-      throw new Error("All market-data servers failed");
-    }
+  .vst-coin-mark {
+    width:85px;
+    height:85px;
+    font-size:42px;
   }
-
-  function tickerFor(asset) {
-    if(!asset || asset.internal) return null;
-
-    if(asset.symbol === "USDT") {
-      const t=tickers.USDCUSDT;
-
-      return t ? {
-        ...t,
-        lastPrice:String(1 / Number(t.lastPrice)),
-        priceChangePercent:String(-Number(t.priceChangePercent))
-      } : null;
-    }
-
-    return tickers[asset.pair];
+  .vst-orbit {
+    width:120px;
+    height:120px;
   }
-
-  function renderRows() {
-    const container=$("marketCoinRows");
-    if(!container) return;
-
-    const q=($("marketSearch")?.value || "").trim().toLowerCase();
-
-    const list=assets.filter(a =>
-      (!watchOnly || watch.has(a.symbol)) &&
-      (
-        a.symbol.toLowerCase().includes(q) ||
-        a.name.toLowerCase().includes(q) ||
-        (a.pair || "").toLowerCase().includes(q)
-      )
-    );
-
-    container.innerHTML=list.map(a => {
-      if(a.internal) {
-        return `<button class="market-coin-row ${a.symbol===selected?"selected":""}" data-coin="${a.symbol}">
-          <span class="market-asset">
-            <span class="market-vst-mark">V</span>
-            <span><b>VST</b><small>Vestora Coin</small></span>
-          </span>
-          <span class="market-row-price">Internal</span>
-          <span class="market-row-change">Not traded</span>
-        </button>`;
-      }
-
-      const t=tickerFor(a);
-      const p=t?Number(t.lastPrice):NaN;
-      const c=t?Number(t.priceChangePercent):NaN;
-
-      return `<button class="market-coin-row ${a.symbol===selected?"selected":""}" data-coin="${a.symbol}">
-        <span class="market-asset">
-          <img src="${icon(a)}" alt="" onerror="this.style.visibility='hidden'">
-          <span><b>${a.symbol}</b><small>${a.name}</small></span>
-        </span>
-        <span class="market-row-price">${Number.isFinite(p)?money(p):"—"}</span>
-        <span class="market-row-change ${c>=0?"positive":"negative"}">${Number.isFinite(c)?(c>=0?"+":"")+c.toFixed(2)+"%":"—"}</span>
-      </button>`;
-    }).join("") || '<div class="market-empty">No matching assets in this view.</div>';
+}
+@media(max-width:560px) {
+  .vst-promo {
+    grid-template-columns:1fr;
+    gap:7px;
+    padding:17px;
   }
-
-  function updatePair() {
-    const a=pairFor(selected);
-    if(!a) return;
-
-    const logo=$("marketCoinLogo");
-
-    if(a.internal) {
-      if(logo) logo.style.visibility="hidden";
-
-      setText("marketPairTitle","VST");
-      setText("marketCoinName","Vestora Coin · Internal asset");
-      setText("marketCurrentPrice","—");
-      setText("marketPriceChange","Not publicly traded");
-      setText("marketHigh","—");
-      setText("marketLow","—");
-      setText("marketVolume","—");
-      setText("marketChangeStat","—");
-      return;
-    }
-
-    const t=tickerFor(a);
-    const p=t?Number(t.lastPrice):NaN;
-    const c=t?Number(t.priceChangePercent):NaN;
-
-    if(logo) {
-      logo.src=icon(a);
-      logo.style.visibility="visible";
-      logo.onerror=()=>{logo.style.visibility="hidden";};
-    }
-
-    setText("marketPairTitle",a.symbol+" / USDT");
-    setText("marketCoinName",a.name+" · Spot market");
-    setText("marketCurrentPrice",Number.isFinite(p)?money(p):"—");
-    setText("marketPriceChange",Number.isFinite(c)?(c>=0?"+":"")+c.toFixed(2)+"% (24h)":"Waiting for price");
-
-    const change=$("marketPriceChange");
-    if(change) change.className=c>=0?"positive":"negative";
-
-    setText("marketHigh",t?money(Number(t.highPrice)):"—");
-    setText("marketLow",t?money(Number(t.lowPrice)):"—");
-    setText("marketVolume",t?Number(t.quoteVolume).toLocaleString("en-US",{maximumFractionDigits:0})+" USDT":"—");
-    setText("marketChangeStat",Number.isFinite(c)?(c>=0?"+":"")+c.toFixed(2)+"%":"—");
-
-    const stat=$("marketChangeStat");
-    if(stat) stat.className=c>=0?"positive":"negative";
+  .vst-promo-art {
+    min-height:125px;
   }
-
-  async function loadTickers() {
-    try {
-      const data=await fetchFromHosts("/api/v3/ticker/24hr");
-
-      tickers=Object.fromEntries(data.map(x=>[x.symbol,x]));
-
-      ["BTC","ETH","BNB","SOL"].forEach(s=>{
-        const t=tickers[s+"USDT"];
-        setText("ticker"+s,t?money(Number(t.lastPrice)):"—");
-      });
-
-      updatePair();
-      renderRows();
-
-      setText("marketStatus","Prices refresh automatically · Public spot market data");
-
-    } catch(error) {
-      setText("marketStatus","Live prices could not connect. Check your network and try again.");
-    }
+  .vst-promo-copy h2 {
+    font-size:25px;
   }
-
-  function chartMessage(message) {
-    const el=$("vestoraPriceChart");
-    if(!el) return;
-
-    let note=el.querySelector(".chart-loading");
-
-    if(!note) {
-      note=document.createElement("div");
-      note.className="chart-loading";
-      el.appendChild(note);
-    }
-
-    note.textContent=message;
-  }
-
-  function ensureChart() {
-    const el=$("vestoraPriceChart");
-
-    if(!el || !window.LightweightCharts) return false;
-    if(chart && candleSeries) return true;
-
-    el.innerHTML="";
-
-    chart=window.LightweightCharts.createChart(el,{
-      width:Math.max(300,el.clientWidth),
-      height:Math.max(240,el.clientHeight),
-
-      layout:{
-        background:{color:"#101729"},
-        textColor:"#8995b4",
-        fontFamily:"DM Sans, sans-serif"
-      },
-
-      grid:{
-        vertLines:{color:"#ffffff0a"},
-        horzLines:{color:"#ffffff0a"}
-      },
-
-      rightPriceScale:{borderColor:"#ffffff18"},
-
-      timeScale:{
-        borderColor:"#ffffff18",
-        timeVisible:true,
-        secondsVisible:false
-      },
-
-      crosshair:{
-        mode:window.LightweightCharts.CrosshairMode.Normal
-      }
-    });
-
-    candleSeries=chart.addCandlestickSeries({
-      upColor:"#18bd88",
-      downColor:"#ef5b76",
-      borderUpColor:"#18bd88",
-      borderDownColor:"#ef5b76",
-      wickUpColor:"#18bd88",
-      wickDownColor:"#ef5b76"
-    });
-
-    if(window.ResizeObserver) {
-      const observer=new ResizeObserver(()=>{
-        if(chart && el.clientWidth) {
-          chart.applyOptions({
-            width:el.clientWidth,
-            height:Math.max(240,el.clientHeight)
-          });
-        }
-      });
-
-      observer.observe(el);
-    }
-
-    return true;
-  }
-
-  function intervalSeconds(value) {
-    const match=/^(\d+)(m|h|d)$/.exec(value);
-    if(!match) return 60;
-
-    const amount=Number(match[1]);
-
-    return amount * (
-      match[2]==="m" ? 60 :
-      match[2]==="h" ? 3600 :
-      86400
-    );
-  }
-
-  // STOP OLD LIVE CONNECTIONS
-  function stopLiveUpdates() {
-    socketGeneration++;
-
-    if(liveSocket) {
-      try {
-        liveSocket.onclose=null;
-        liveSocket.close();
-      } catch(error) {}
-
-      liveSocket=null;
-    }
-
-    if(liveFlushTimer) {
-      clearInterval(liveFlushTimer);
-      liveFlushTimer=null;
-    }
-
-    if(reconnectTimer) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer=null;
-    }
-
-    liveCandle=null;
-    pendingCandle=null;
-  }
-
-  // LIVE BYBIT SPOT TRADE STREAM — REAL EXECUTED TRADES
-  function startLiveUpdates(asset) {
-    stopLiveUpdates();
-
-    if(!asset || asset.internal || !("WebSocket" in window)) return;
-
-    const generation=socketGeneration;
-    const stream="wss://stream.bybit.com/v5/public/spot";
-
-    try {
-      liveSocket=new WebSocket(stream);
-    } catch(error) {
-      setText("marketStatus","Live chart connection could not start.");
-      return;
-    }
-
-    liveSocket.onopen=()=>{
-      if(generation!==socketGeneration) return;
-
-      liveSocket.send(JSON.stringify({
-        op:"subscribe",
-        args:["publicTrade."+asset.pair]
-      }));
-
-      setText("marketStatus","Connecting to Bybit live spot trades…");
-    };
-
-    liveSocket.onmessage=event=>{
-      if(generation!==socketGeneration || selected!==asset.symbol) return;
-
-      try {
-        const message=JSON.parse(event.data);
-
-        if(message.topic!=="publicTrade."+asset.pair || !Array.isArray(message.data)) return;
-
-        message.data.forEach(trade=>{
-          const price=Number(trade.p);
-          const time=Number(trade.T);
-
-          if(!Number.isFinite(price) || !Number.isFinite(time)) return;
-
-          const seconds=intervalSeconds(interval);
-          const candleTime=Math.floor(time/(seconds*1000))*seconds;
-
-          if(!liveCandle || candleTime>liveCandle.time) {
-            liveCandle={
-              time:candleTime,
-              open:price,
-              high:price,
-              low:price,
-              close:price
-            };
-          } else if(candleTime===liveCandle.time) {
-            liveCandle.high=Math.max(liveCandle.high,price);
-            liveCandle.low=Math.min(liveCandle.low,price);
-            liveCandle.close=price;
-          } else {
-            return;
-          }
-
-          pendingCandle={...liveCandle};
-        });
-
-      } catch(error) {}
-    };
-
-    liveSocket.onerror=()=>{
-      if(generation===socketGeneration) {
-        try { liveSocket.close(); } catch(error) {}
-      }
-    };
-
-    liveSocket.onclose=()=>{
-      if(generation!==socketGeneration || selected!==asset.symbol) return;
-
-      setText("marketStatus","Bybit live feed reconnecting…");
-
-      reconnectTimer=setTimeout(()=>{
-        if(generation===socketGeneration && selected===asset.symbol) {
-          startLiveUpdates(asset);
-        }
-      },2000);
-    };
-
-    if(liveFlushTimer) clearInterval(liveFlushTimer);
-
-    liveFlushTimer=setInterval(()=>{
-      if(!pendingCandle || generation!==socketGeneration || !candleSeries) return;
-
-      const candle={...pendingCandle};
-      pendingCandle=null;
-
-      try {
-        candleSeries.update(candle);
-      } catch(error) {}
-    },200);
-  }
-
-  // FAST CHART LOADING WITH LOCAL CACHE
-  async function loadCandles() {
-    stopLiveUpdates();
-
-    const requestId=++candleRequest;
-    const asset=pairFor(selected);
-    const el=$("vestoraPriceChart");
-
-    if(!el) return;
-
-    if(asset.internal) {
-      if(chart) {
-        chart.remove();
-        chart=null;
-        candleSeries=null;
-      }
-
-      el.innerHTML='<div class="chart-loading">VST is an internal Vestora asset. Public market charts and prices are not available.</div>';
-      return;
-    }
-
-    if(!window.LightweightCharts) {
-      chartMessage("Chart library could not be loaded. Refresh the page and try again.");
-      return;
-    }
-
-    if(!ensureChart()) {
-      chartMessage("Chart area is not ready yet.");
-      return;
-    }
-
-    const cacheKey="vestora-candles-"+asset.pair+"-"+interval;
-    let hasCached=false;
-
-    // DISPLAY SAVED CHART DATA IMMEDIATELY
-    try {
-      const saved=localStorage.getItem(cacheKey);
-
-      if(saved) {
-        const cached=JSON.parse(saved);
-
-        if(Array.isArray(cached) && cached.length) {
-          candleSeries.setData(cached);
-
-          liveCandle={...cached[cached.length-1]};
-          pendingCandle=null;
-
-          chart.timeScale().fitContent();
-          hasCached=true;
-
-          const note=el.querySelector(".chart-loading");
-          if(note) note.remove();
-
-          chartMessage("Refreshing market data…");
-
-          startLiveUpdates(asset);
-        }
-      }
-    } catch(error) {}
-
-    if(!hasCached) {
-      chartMessage("Loading "+asset.symbol+" chart…");
-    }
-
-    // LOAD FRESH HISTORICAL CANDLES
-    try {
-      const data=await fetchFromHosts(
-        "/api/v3/klines?symbol="+encodeURIComponent(asset.pair)+
-        "&interval="+encodeURIComponent(interval)+
-        "&limit=100"
-      );
-
-      if(requestId!==candleRequest) return;
-
-      if(!Array.isArray(data) || !data.length) {
-        throw new Error("No candle data returned");
-      }
-
-      const candles=data.map(k=>({
-        time:Math.floor(Number(k[0])/1000),
-        open:Number(k[1]),
-        high:Number(k[2]),
-        low:Number(k[3]),
-        close:Number(k[4])
-      })).filter(k=>
-        Number.isFinite(k.time) &&
-        Number.isFinite(k.open) &&
-        Number.isFinite(k.high) &&
-        Number.isFinite(k.low) &&
-        Number.isFinite(k.close)
-      );
-
-      if(!candles.length) {
-        throw new Error("Invalid candle data");
-      }
-
-      candleSeries.setData(candles);
-
-      liveCandle={...candles[candles.length-1]};
-      pendingCandle=null;
-
-      try {
-        localStorage.setItem(cacheKey,JSON.stringify(candles));
-      } catch(error) {}
-
-      chart.timeScale().fitContent();
-
-      const note=el.querySelector(".chart-loading");
-      if(note) note.remove();
-
-      if(!hasCached) {
-        startLiveUpdates(asset);
-      }
-
-      setText("marketStatus","Historical candles loaded · Connecting live trade feed");
-
-    } catch(error) {
-      if(requestId!==candleRequest) return;
-
-      if(hasCached) {
-        const note=el.querySelector(".chart-loading");
-        if(note) note.remove();
-
-        setText("marketStatus","Showing saved chart data · Refresh connection unavailable");
-
-      } else {
-        chartMessage("Market data unavailable. Please try again shortly.");
-      }
-    }
-  }
-
-  async function selectCoin(symbol) {
-    if(!assets.some(a=>a.symbol===symbol)) return;
-
-    selected=symbol;
-
-    updatePair();
-    renderRows();
-
-    await loadCandles();
-  }
-
-  function load() {
-    const rows=$("marketCoinRows");
-    if(!rows) return;
-
-    if(rows.dataset.ready) {
-      loadTickers();
-      loadCandles();
-      return;
-    }
-
-    rows.dataset.ready="1";
-
-    $("marketSearch")?.addEventListener("input",renderRows);
-
-    $("marketWatchToggle")?.addEventListener("click",()=>{
-      watchOnly=!watchOnly;
-
-      $("marketWatchToggle").classList.toggle("active",watchOnly);
-      $("marketWatchToggle").textContent=watchOnly?"★ Watchlist":"☆ Watchlist";
-
-      renderRows();
-    });
-
-    $("chartIntervals")?.querySelectorAll("[data-interval]").forEach(b=>{
-      b.addEventListener("click",()=>{
-        interval=b.dataset.interval;
-
-        $("chartIntervals").querySelectorAll("button").forEach(x=>{
-          x.classList.toggle("selected",x===b);
-        });
-
-        loadCandles();
-      });
-    });
-
-    try {
-      watch=new Set(JSON.parse(localStorage.getItem("vestora-market-watch")||"[]"));
-    } catch(error) {
-      watch=new Set();
-    }
-
-    rows.addEventListener("click",event=>{
-      const button=event.target.closest("[data-coin]");
-      if(!button) return;
-
-      selectCoin(button.dataset.coin);
-    });
-
-    rows.addEventListener("dblclick",event=>{
-      const button=event.target.closest("[data-coin]");
-      if(!button) return;
-
-      const symbol=button.dataset.coin;
-
-      watch.has(symbol) ? watch.delete(symbol) : watch.add(symbol);
-
-      try {
-        localStorage.setItem("vestora-market-watch",JSON.stringify([...watch]));
-      } catch(error) {}
-
-      renderRows();
-    });
-
-    renderRows();
-
-    loadTickers();
-    loadCandles();
-
-    if(refreshTimer) clearInterval(refreshTimer);
-
-    refreshTimer=setInterval(loadTickers,15000);
-  }
-
-  window.VestoraMarkets={load,selectCoin};
-})();
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.105.0"></script>
+</head>
+
+<body>
+<div class="glow g1"></div>
+<div class="glow g2"></div>
+<div id="toast"></div>
+
+<!-- LOGIN AND SIGNUP -->
+<main id="auth" class="auth">
+
+  <section class="pitch">
+    <a class="brand"><b>V</b> VESTORA</a>
+    <div>
+      <small>THE FUTURE OF DIGITAL FINANCE</small>
+      <h1>Make your next<br><em>move matter.</em></h1>
+      <p>A clear view of your financial world, digital assets and account activity.</p>
+      <div class="orb"><span>V</span></div>
+    </div>
+    <footer>© 2026 VESTORA</footer>
+  </section>
+
+  <section class="authside">
+    <div class="card">
+
+      <div class="brand mobile"><b>V</b> VESTORA</div>
+
+      <div class="tabs">
+        <button class="selected" data-tab="login">Log in</button>
+        <button data-tab="signup">Create account</button>
+      </div>
+
+      <div id="login" class="form">
+        <small>WELCOME BACK</small>
+        <h2>Sign in to your space</h2>
+        <p>Your financial overview is one step away.</p>
+
+        <label>Email address
+          <input id="liEmail" type="email" autocomplete="email" placeholder="you@example.com">
+        </label>
+
+        <label>Password
+          <input id="liPass" type="password" autocomplete="current-password" placeholder="Your password">
+        </label>
+
+        <button id="loginBtn" class="primary">Log in ↗</button>
+        <button id="passkeyLoginBtn" class="secondary">Sign in with Face ID / Fingerprint</button>
+        <button id="forgot" class="link">Forgot password?</button>
+        <p class="fine">Passkey sign-in may use Face ID, fingerprint, device PIN or a security key.</p>
+      </div>
+
+      <div id="signup" class="form hide">
+        <small>START YOUR JOURNEY</small>
+        <h2>Create your account</h2>
+        <p>Set up your VESTORA account.</p>
+
+        <label>Full name
+          <input id="suName" placeholder="Your full name">
+        </label>
+
+        <label>Username
+          <input id="suUser" placeholder="Choose a username">
+        </label>
+
+        <label>Email address
+          <input id="suEmail" type="email" placeholder="you@example.com">
+        </label>
+
+        <label>Password
+          <input id="suPass" type="password" minlength="8" placeholder="At least 8 characters">
+        </label>
+
+        <button id="signupBtn" class="primary">Create account ↗</button>
+        <p class="fine">By creating an account, you agree to use VESTORA in accordance with its terms and applicable laws.</p>
+      </div>
+
+      <div id="reset" class="form hide">
+        <small>ACCOUNT RECOVERY</small>
+        <h2>Reset password</h2>
+        <p>We'll email you a password reset link.</p>
+
+        <label>Email address
+          <input id="reEmail" type="email" placeholder="you@example.com">
+        </label>
+
+        <button id="resetBtn" class="primary">Send reset link</button>
+        <button id="back" class="link">Back to log in</button>
+      </div>
+
+      <div class="secure">● Secure sign-in powered by Supabase</div>
+    </div>
+  </section>
+</main>
+
+<!-- MAIN APPLICATION -->
+<main id="app" class="app hide">
+
+  <aside>
+    <a class="brand"><b>V</b> VESTORA</a>
+    <small class="sidehead">WORKSPACE</small>
+    <nav>
+      <button class="active" data-page="overview">⌂　Overview</button>
+      <button data-page="markets">⌁　Markets</button>
+      <button data-page="wallet">▣　Wallet & deposits</button>
+      <button data-page="activity">↗　Activity</button>
+      <button id="adminNav" class="hide" data-page="admin">⚙　Admin panel</button>
+    </nav>
+  </aside>
+
+  <section class="work">
+
+    <header>
+      <div>
+        <small>YOUR FINANCIAL OVERVIEW</small>
+        <h2 id="title">Overview</h2>
+      </div>
+      <button id="logout" class="header-logout">⇥ Log out</button>
+      <span id="avatar">V</span>
+    </header>
+
+    <div class="content">
+
+      <!-- OVERVIEW -->
+      <section id="overview" class="page">
+
+        <div class="welcome">
+          <div>
+            <h1>Welcome, <span id="name">there</span>.</h1>
+            <p>Your VESTORA account at a glance.</p>
+          </div>
+          <small id="date"></small>
+        </div>
+
+        <!-- FEATURED VST COIN -->
+        <section class="vst-promo vst-promo-home">
+          <div class="vst-promo-art">
+            <span class="vst-orbit"></span>
+            <span class="vst-coin-mark">V</span>
+            <small>THE VESTORA ECOSYSTEM</small>
+          </div>
+
+          <div class="vst-promo-copy">
+            <span class="vst-eyebrow">✦ VESTORA'S FEATURED COIN</span>
+            <h2>VST <em>— Your platform's coin.</em></h2>
+            <p>
+              Get to know the official internal coin of VESTORA.
+              Discover its role in the platform and explore its details.
+            </p>
+
+            <div class="vst-tags">
+              <span>OFFICIAL COIN</span>
+              <span>INTERNAL ASSET</span>
+            </div>
+
+            <p class="vst-disclaimer">
+              VST is not currently publicly traded. No public price,
+              trading volume or independent rating is being claimed.
+            </p>
+
+            <button type="button" class="vst-market-btn" data-go="markets">
+              Explore VST in Markets ↗
+            </button>
+          </div>
+        </section>
+
+        <div class="notice">
+          <b>Account and transaction status</b>
+          <p>
+            Only deposits that have been independently verified and approved
+            by an authorised administrator can be credited. Never send funds
+            until you have confirmed the receiving address and network.
+          </p>
+        </div>
+
+        <div class="notice">
+          <b>🔐 Secure your account with a passkey</b>
+          <p>
+            Your device may use Face ID, fingerprint, PIN or a security key.
+            VESTORA does not receive your biometric data.
+          </p>
+          <button id="registerPasskeyBtn" class="primary compact">
+            Set up Face ID / Fingerprint
+          </button>
+        </div>
+
+        <div class="stats">
+          <article class="featured">
+            <small>USD WALLET BALANCE</small>
+            <h2 id="balance">$0.00</h2>
+            <p>Available wallet balance</p>
+          </article>
+          <article>
+            <small>ACCOUNT</small>
+            <h2 id="accountStatus">Active</h2>
+            <p>Signed-in profile</p>
+          </article>
+          <article>
+            <small>CRYPTO ASSETS</small>
+            <h2>10</h2>
+            <p>Market watchlist</p>
+          </article>
+        </div>
+
+        <h3>Explore VESTORA</h3>
+        <div class="quick">
+          <button data-go="wallet">▣<b>Wallet & deposits</b><small>View deposit options ↗</small></button>
+          <button data-go="markets">⌁<b>Crypto markets</b><small>Market data status ↗</small></button>
+          <button data-go="activity">↗<b>Recent activity</b><small>Review transactions ↗</small></button>
+        </div>
+      </section>
+
+      <!-- MARKETS -->
+      <section id="markets" class="page hide vestora-markets">
+        <div class="market-heading">
+          <div>
+            <small>SPOT MARKET OVERVIEW</small>
+            <h1>Markets</h1>
+            <p>Explore digital asset prices and market movements.</p>
+          </div>
+          <span class="market-live"><i></i> LIVE MARKET DATA</span>
+        </div>
+
+        <div class="market-ticker">
+          <span>BTC <b id="tickerBTC">—</b></span>
+          <span>ETH <b id="tickerETH">—</b></span>
+          <span>BNB <b id="tickerBNB">—</b></span>
+          <span>SOL <b id="tickerSOL">—</b></span>
+        </div>
+
+        <div class="market-layout">
+          <section class="market-main">
+            <div class="market-pair-head">
+              <div class="market-coin-title">
+                <img id="marketCoinLogo" src="https://assets.coincap.io/assets/icons/btc@2x.png" alt="Bitcoin logo">
+                <div>
+                  <h2 id="marketPairTitle">BTC / USDT</h2>
+                  <small id="marketCoinName">Bitcoin · Spot market</small>
+                </div>
+              </div>
+              <div class="market-current">
+                <strong id="marketCurrentPrice">Loading…</strong>
+                <span id="marketPriceChange">Fetching market data</span>
+              </div>
+            </div>
+
+            <div class="market-stats">
+              <div><small>24H HIGH</small><b id="marketHigh">—</b></div>
+              <div><small>24H LOW</small><b id="marketLow">—</b></div>
+              <div><small>24H VOLUME</small><b id="marketVolume">—</b></div>
+              <div><small>24H CHANGE</small><b id="marketChangeStat">—</b></div>
+            </div>
+
+            <div class="chart-toolbar">
+              <div id="chartIntervals">
+                <button class="selected" data-interval="1m">1m</button>
+                <button data-interval="5m">5m</button>
+                <button data-interval="15m">15m</button>
+                <button data-interval="1h">1H</button>
+                <button data-interval="4h">4H</button>
+                <button data-interval="1d">1D</button>
+              </div>
+              <span>Price chart · USD</span>
+            </div>
+
+            <div id="vestoraPriceChart" class="market-chart">
+              <div class="chart-loading">Loading price chart…</div>
+            </div>
+
+            <div class="market-chart-foot">
+              <span>Data source: Binance historical data and Bybit live trade feed</span>
+              <span>Market information only · No trading</span>
+            </div>
+          </section>
+
+          <aside class="market-side">
+            <div class="market-list-head">
+              <div><h3>Spot markets</h3><small>Prices in USDT</small></div>
+              <button id="marketWatchToggle" class="watch-toggle">☆ Watchlist</button>
+            </div>
+
+            <label class="market-search">
+              <span>⌕</span>
+              <input id="marketSearch" type="search" placeholder="Search coin or pair">
+            </label>
+
+            <div class="market-table-head">
+              <span>ASSET / PAIR</span>
+              <span>LAST PRICE</span>
+              <span>24H</span>
+            </div>
+
+            <div id="marketCoinRows">
+              <div class="chart-loading">Loading markets…</div>
+            </div>
+          </aside>
+        </div>
+
+        <p id="marketStatus" class="market-status">
+          Connecting to live public market data…
+        </p>
+      </section>
+
+      <!-- WALLET -->
+      <section id="wallet" class="page hide">
+        <small>YOUR ACCOUNT</small>
+        <h1>Wallet & deposits</h1>
+
+        <div class="wallet">
+          <small>AVAILABLE USD BALANCE</small>
+          <h2 id="balance2">$0.00</h2>
+          <span class="pill">USD WALLET</span>
+        </div>
+
+        <div class="notice">
+          <b>Deposit processing</b>
+          <p>
+            Deposit requests are recorded for administrator review.
+            A submitted transaction hash is not proof of payment.
+            An administrator must independently verify the transaction
+            on the correct blockchain before approving a credit.
+          </p>
+        </div>
+
+        <div class="panel">
+          <h3>Submit a deposit transaction</h3>
+
+          <label>Network
+            <select id="depositNetwork">
+              <option value="BTC_MAINNET">Bitcoin Mainnet (BTC)</option>
+              <option value="BNB_SMART_CHAIN">BNB Smart Chain (BEP20)</option>
+            </select>
+          </label>
+
+          <label>Amount sent
+            <input id="depositAmount" type="number" min="0" step="any" placeholder="Amount in BTC or BNB">
+          </label>
+
+          <label>Transaction hash
+            <input id="depositHash" placeholder="Paste the blockchain transaction hash">
+          </label>
+
+          <button id="submitDeposit" class="primary">Submit for review</button>
+        </div>
+
+        <div class="panel">
+          <h3>Receiving addresses</h3>
+          <p class="fine">
+            Confirm the address and network with VESTORA support before transferring funds.
+            Sending assets on the wrong network may result in permanent loss.
+          </p>
+
+          <div class="address">
+            <b>BTC · Bitcoin Mainnet</b>
+            <code>bc1qyw5hj746zg6h9cwv1wzj3mfaacus5fnepldz0u</code>
+            <button class="copy" data-copy="bc1qyw5hj746zg6h9cwv1wzj3mfaacus5fnepldz0u">Copy</button>
+          </div>
+
+          <div class="address">
+            <b>BNB · BNB Smart Chain (BEP20)</b>
+            <code>0x8D976805B946da236Ae4f52b0fb58dd55AFC5DB8</code>
+            <button class="copy" data-copy="0x8D976805B946da236Ae4f52b0fb58dd55AFC5DB8">Copy</button>
+          </div>
+        </div>
+
+        <div class="table">
+          <h3>My deposit requests</h3>
+          <table>
+            <thead>
+              <tr><th>Asset</th><th>Amount</th><th>Status</th><th>Submitted</th></tr>
+            </thead>
+            <tbody id="depositRows">
+              <tr><td colspan="4">No deposit requests.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ACTIVITY -->
+      <section id="activity" class="page hide">
+        <small>ACCOUNT TIMELINE</small>
+        <h1>Activity</h1>
+        <div class="table">
+          <h3>Recent transactions</h3>
+          <table>
+            <thead>
+              <tr><th>Type</th><th>Description</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody id="activityRows">
+              <tr><td colspan="4">No activity yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ADMIN -->
+      <section id="admin" class="page hide">
+        <div id="adminDashboardHome" class="admin-dashboard-home">
+          <small>VESTORA CONTROL CENTRE</small>
+          <h1>Admin Dashboard</h1>
+          <p class="admin-dashboard-intro">Choose a management area to continue.</p>
+
+          <div class="admin-dashboard-grid">
+            <button type="button" class="admin-dashboard-card" data-admin-view="deposits">
+              <span class="admin-card-icon">⇩</span>
+              <span class="admin-card-copy">
+                <strong>Pending Deposits</strong>
+                <small>Review deposit requests and manage approvals</small>
+              </span>
+              <span class="admin-card-arrow">↗</span>
+            </button>
+
+            <button type="button" class="admin-dashboard-card" data-admin-view="balance">
+              <span class="admin-card-icon">＄</span>
+              <span class="admin-card-copy">
+                <strong>Balance Management</strong>
+                <small>Find a customer and adjust their USD or VST balance</small>
+              </span>
+              <span class="admin-card-arrow">↗</span>
+            </button>
+
+            <button type="button" class="admin-dashboard-card" data-admin-view="history">
+              <span class="admin-card-icon">≡</span>
+              <span class="admin-card-copy">
+                <strong>Balance Adjustment History</strong>
+                <small>Review the recorded admin balance changes</small>
+              </span>
+              <span class="admin-card-arrow">↗</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- PENDING DEPOSITS -->
+        <section id="adminViewDeposits" class="admin-subview hide">
+          <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
+          <small>DEPOSIT CONTROL</small>
+          <h1>Pending Deposits</h1>
+          <div class="notice">
+            <b>Manual verification required</b>
+            <p>
+              Before approval, independently inspect the transaction on the correct blockchain explorer,
+              confirm the receiving address, asset, amount, confirmations and that the transaction has
+              not already been credited. This interface does not automatically monitor blockchains.
+            </p>
+          </div>
+          <div class="table">
+            <h3>Deposit requests awaiting review</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th><th>Network / asset</th><th>Amount</th><th>Transaction hash</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminDeposits">
+                <tr><td colspan="5">No pending requests.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- CUSTOMER BALANCE MANAGEMENT -->
+        <section id="adminViewBalance" class="admin-subview hide">
+          <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
+          <small>ACCOUNT CONTROLS</small>
+          <h1>Balance Management</h1>
+          <div class="panel admin-balance-panel">
+            <h3>Customer Balance Management</h3>
+            <label>Search customer by name or username
+              <input id="balanceCustomerSearch" type="search" placeholder="Enter customer name or username">
+            </label>
+            <button id="balanceCustomerSearchBtn" class="primary compact">Search Customers</button>
+            <div id="balanceCustomerResults" class="balance-customer-results"></div>
+
+            <div id="balanceCustomerSelected" class="balance-customer-selected hide">
+              <h3 id="balanceCustomerName"></h3>
+              <p id="balanceCustomerUsername"></p>
+              <div class="balance-customer-balances">
+                <div><small>USD BALANCE</small><strong id="adminUsdBalance">$0.00</strong></div>
+                <div><small>VST BALANCE</small><strong id="adminVstBalance">0 VST</strong></div>
+              </div>
+              <label>Currency
+                <select id="balanceCurrency">
+                  <option value="USD">USD</option>
+                  <option value="VST">VST</option>
+                </select>
+              </label>
+              <label>Adjustment
+                <select id="balanceAdjustmentType">
+                  <option value="credit">Credit</option>
+                  <option value="debit">Debit</option>
+                </select>
+              </label>
+              <label>Amount
+                <input id="balanceAdjustmentAmount" type="number" min="0" step="any" placeholder="Enter amount">
+              </label>
+              <label>Reason
+                <input id="balanceAdjustmentReason" type="text" placeholder="Reason for adjustment">
+              </label>
+              <button id="applyBalanceAdjustment" class="primary compact" disabled>Review and Apply Adjustment</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- BALANCE ADJUSTMENT AUDIT HISTORY -->
+        <section id="adminViewHistory" class="admin-subview hide">
+          <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
+          <small>ADMIN AUDIT</small>
+          <h1>Balance Adjustment History</h1>
+          <div class="table balance-adjustment-history">
+            <h3>Recorded balance changes</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th><th>Customer</th><th>Admin</th><th>Currency</th>
+                  <th>Action</th><th>Amount</th><th>Before</th><th>After</th><th>Reason</th>
+                </tr>
+              </thead>
+              <tbody id="balanceAdjustmentLogs">
+                <tr><td colspan="9">No records yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+    </div>
+
+    <footer class="appfooter">
+      VESTORA · Digital asset services involve risk. Verify all transaction details before sending funds.
+    </footer>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="markets.js"></script>
+<script src="app.js"></script>
+<script src="vestora-settings.js"></script>
+
+</body>
+</html>
