@@ -3,7 +3,8 @@
    Dark luxury interface | Responsive | Gold accents
    ===================================================== */
 
-:root {
+:ro2
+ot {
   --v-bg: #080b13;
   --v-surface: #101622;
   --v-surface-2: #151e2d;
