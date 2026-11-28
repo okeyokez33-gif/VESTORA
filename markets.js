@@ -74,13 +74,11 @@
   let candleRequest=0;
   let resizeObserver=null;
 
-  // SELECTED COIN CONNECTION
   let liveSocket=null;
   let reconnectTimer=null;
   let heartbeatTimer=null;
   let socketGeneration=0;
 
-  // ALL COIN PRICE CONNECTION
   let marketSocket=null;
   let marketReconnectTimer=null;
   let marketHeartbeatTimer=null;
@@ -92,6 +90,12 @@
   let priceSource="Bybit";
   let chartLoading=false;
   let liveCandle=null;
+  let homePreviewInitialized=false;
+
+  const HOME_COINS=[
+    "BTC","ETH","BNB","SOL","XRP",
+    "DOGE","ADA","LINK","TRX","AVAX"
+  ];
 
   const fmt=n=>!Number.isFinite(n)?"—":
     n>=1000?n.toLocaleString("en-US",{
@@ -125,7 +129,6 @@
 
     const requests=BYBIT_APIS.map(async(base,index)=>{
       const controller=controllers[index];
-
       const timeout=setTimeout(
         ()=>controller.abort(),
         25000
@@ -174,19 +177,9 @@
 
   function bybitInterval(value){
     const map={
-      "1m":"1",
-      "3m":"3",
-      "5m":"5",
-      "15m":"15",
-      "30m":"30",
-      "1h":"60",
-      "2h":"120",
-      "4h":"240",
-      "6h":"360",
-      "12h":"720",
-      "1d":"D",
-      "1w":"W",
-      "1M":"M"
+      "1m":"1","3m":"3","5m":"5","15m":"15",
+      "30m":"30","1h":"60","2h":"120","4h":"240",
+      "6h":"360","12h":"720","1d":"D","1w":"W","1M":"M"
     };
 
     return map[value]||"1";
@@ -198,7 +191,6 @@
     if(!item||!item.symbol)return;
 
     const price=Number(item.lastPrice);
-
     if(!Number.isFinite(price)||price<=0)return;
 
     const existing=tickers[item.symbol]||{
@@ -249,7 +241,6 @@
           if(!item.symbol)return;
 
           const price=Number(item.lastPrice);
-
           if(!Number.isFinite(price)||price<=0)return;
 
           const change=Number(item.price24hPcnt);
@@ -279,7 +270,6 @@
 
         ["BTC","ETH","BNB","SOL"].forEach(s=>{
           const t=tickers[s+"USDT"];
-
           setText(
             "ticker"+s,
             t?money(Number(t.lastPrice)):"—"
@@ -288,8 +278,7 @@
 
         updatePair();
         renderRows();
-
-        // Start or update the all-coin live feed.
+        renderHomeRows();
         startAllTickerStream();
 
         setText(
@@ -307,6 +296,8 @@
           "Market connection unavailable · Retrying automatically"
         );
 
+        renderHomeRows();
+
       }finally{
         tickerPromise=null;
       }
@@ -323,6 +314,96 @@
     }
 
     return tickers[asset.pair]||null;
+  }
+
+  // HOMEPAGE MARKET PREVIEW
+
+  function renderHomeRows(){
+    const container=$("homeMarketRows");
+    if(!container)return;
+
+    const homeAssets=HOME_COINS
+      .map(symbol=>pairFor(symbol))
+      .filter(asset=>asset&&!asset.internal);
+
+    const available=homeAssets.filter(asset=>
+      tickerFor(asset)
+    );
+
+    if(!available.length){
+      container.innerHTML=
+        '<p class="home-market-loading">Connecting to live market prices…</p>';
+      return;
+    }
+
+    container.innerHTML=available.map(asset=>{
+      const ticker=tickerFor(asset);
+      const price=Number(ticker.lastPrice);
+      const change=Number(ticker.priceChangePercent);
+      const positive=Number.isFinite(change)&&change>=0;
+
+      return `
+        <button type="button"
+                class="home-market-item"
+                data-home-coin="${asset.symbol}"
+                aria-label="Open ${asset.name} chart">
+          <span class="home-market-coin">
+            <img src="${icon(asset)}"
+                 alt=""
+                 onerror="this.style.visibility='hidden'">
+            <span>
+              <strong>${asset.symbol}</strong>
+              <small>${asset.name}</small>
+            </span>
+          </span>
+
+          <span class="home-market-price">
+            <strong>${Number.isFinite(price)?money(price):"—"}</strong>
+            <small class="${positive?"positive":"negative"}">
+              ${Number.isFinite(change)?
+                (change>=0?"+":"")+change.toFixed(2)+"%":"—"}
+            </small>
+          </span>
+        </button>
+      `;
+    }).join("");
+  }
+
+  function initHomePreview(){
+    if(homePreviewInitialized)return;
+    homePreviewInitialized=true;
+
+    const container=$("homeMarketRows");
+
+    if(container){
+      container.addEventListener("click",event=>{
+        const button=event.target.closest("[data-home-coin]");
+        if(!button)return;
+
+        const symbol=button.dataset.homeCoin;
+        if(!symbol)return;
+
+        const marketsButton=document.querySelector(
+          '[data-page="markets"]'
+        );
+
+        if(marketsButton){
+          marketsButton.click();
+        }
+
+        // Allow the Markets page to become visible before
+        // creating the selected coin's chart.
+        setTimeout(()=>{
+          selectCoin(symbol);
+        },300);
+      });
+    }
+
+    // Public prices can load while the user is on the homepage.
+    // This does not load a chart until a coin is selected.
+    if(container){
+      loadTickers();
+    }
   }
 
   // ALL COIN LIVE TICKER WEBSOCKET
@@ -351,7 +432,6 @@
   }
 
   function startAllTickerStream(){
-    // Only subscribe to actual USDT spot pairs returned by Bybit.
     const availableAssets=assets.filter(a=>
       !a.internal&&
       a.symbol!=="USDT"&&
@@ -370,7 +450,6 @@
 
     const signature=topics.join("|");
 
-    // Do not reconnect if the available market list has not changed.
     if(
       signature===marketSubscriptionSignature&&
       marketSocket&&
@@ -383,7 +462,6 @@
     }
 
     marketSubscriptionSignature=signature;
-
     stopAllTickerStream();
 
     const generation=marketSocketGeneration;
@@ -401,8 +479,6 @@
 
       marketReconnectAttempts=0;
 
-      // Bybit Spot allows a maximum of 10 topics
-      // in each subscription request.
       const batches=[];
 
       for(let i=0;i<topics.length;i+=10){
@@ -516,8 +592,8 @@
 
     marketReconnectTimer=setTimeout(()=>{
       if(
-        $("marketCoinRows")&&
-        Object.keys(tickers).length
+        $("marketCoinRows")||
+        $("homeMarketRows")
       ){
         marketSubscriptionSignature="";
         startAllTickerStream();
@@ -525,9 +601,7 @@
     },delay);
   }
 
-  // 500MS DISPLAY REFRESH
-  // This updates the screen using the newest received data.
-  // It does not create artificial market prices.
+  // REFRESH DISPLAYED PRICES USING REAL RECEIVED DATA
 
   function refreshVisiblePrices(){
     const container=$("marketCoinRows");
@@ -542,14 +616,8 @@
         if(!asset||asset.internal)return;
 
         const ticker=tickerFor(asset);
-
-        const priceEl=row.querySelector(
-          ".market-row-price"
-        );
-
-        const changeEl=row.querySelector(
-          ".market-row-change"
-        );
+        const priceEl=row.querySelector(".market-row-price");
+        const changeEl=row.querySelector(".market-row-change");
 
         if(!ticker)return;
 
@@ -564,23 +632,17 @@
           changeEl.textContent=
             (change>=0?"+":"")+change.toFixed(2)+"%";
 
-          changeEl.classList.toggle(
-            "positive",
-            change>=0
-          );
-
-          changeEl.classList.toggle(
-            "negative",
-            change<0
-          );
+          changeEl.classList.toggle("positive",change>=0);
+          changeEl.classList.toggle("negative",change<0);
         }
       });
     }
 
     updatePair();
+    renderHomeRows();
   }
 
-  // WISHLIST
+  // WATCHLIST
 
   function toggleWatch(symbol){
     if(watch.has(symbol))watch.delete(symbol);
@@ -596,7 +658,7 @@
     renderRows();
   }
 
-  // COIN LIST
+  // MARKET COIN LIST
 
   function renderRows(){
     const container=$("marketCoinRows");
@@ -779,7 +841,6 @@
     const el=$("vestoraPriceChart");
 
     if(!el||!window.LightweightCharts)return false;
-
     if(chart&&candleSeries)return true;
 
     el.innerHTML="";
@@ -996,10 +1057,7 @@
 
       liveSocket.send(JSON.stringify({
         op:"subscribe",
-        args:[
-          candleTopic,
-          tradeTopic
-        ]
+        args:[candleTopic,tradeTopic]
       }));
 
       heartbeatTimer=setInterval(()=>{
@@ -1035,16 +1093,12 @@
           return;
         }
 
-        // REAL-TIME TRADE UPDATES
-
         if(message.topic===tradeTopic){
           if(Array.isArray(message.data)){
             message.data.forEach(updateFromTrade);
           }
           return;
         }
-
-        // BYBIT KLINE UPDATES
 
         if(
           message.topic===candleTopic&&
@@ -1130,7 +1184,6 @@
 
   async function loadCandles(){
     stopLiveUpdates();
-
     liveCandle=null;
 
     const requestId=++candleRequest;
@@ -1171,7 +1224,6 @@
     }
 
     chartMessage("Loading "+asset.symbol+" Bybit historical candles…");
-
     chartLoading=true;
 
     const cacheKey=
@@ -1187,13 +1239,9 @@
 
         if(Array.isArray(cached)&&cached.length){
           candleSeries.setData(cached);
-
           liveCandle={...cached[cached.length-1]};
-
           chart.timeScale().fitContent();
-
           hasCached=true;
-
           chartMessage("Updating Bybit historical candles…");
         }
       }
@@ -1239,7 +1287,6 @@
       }
 
       candleSeries.setData(candles);
-
       liveCandle={...candles[candles.length-1]};
 
       try{
@@ -1267,7 +1314,6 @@
       if(requestId!==candleRequest)return;
 
       chartLoading=false;
-
       console.error("Bybit historical candle error:",error);
 
       if(hasCached){
@@ -1321,6 +1367,8 @@
     const rows=$("marketCoinRows");
     if(!rows)return;
 
+    initHomePreview();
+
     if(rows.dataset.ready){
       loadTickers();
       loadCandles();
@@ -1328,7 +1376,7 @@
       if(!refreshTimer){
         refreshTimer=setInterval(
           refreshVisiblePrices,
-          500
+          1000
         );
       }
 
@@ -1415,23 +1463,26 @@
     });
 
     renderRows();
+    renderHomeRows();
 
     loadTickers();
     loadCandles();
 
-    // REST is a backup refresh, not the live price feed.
     if(refreshTimer){
       clearInterval(refreshTimer);
     }
 
     refreshTimer=setInterval(
       refreshVisiblePrices,
-      500
+      1000
     );
 
-    // Keep the slower REST refresh as a fallback.
     setInterval(loadTickers,30000);
   }
+
+  // START HOMEPAGE PREVIEW WHEN THE SCRIPT LOADS
+
+  initHomePreview();
 
   window.VestoraMarkets={
     load,
