@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="markets.css">
 <link rel="stylesheet" href="vestora-luxury.css">
-.
+
 <style>
 .vst-promo {
   position:relative;
@@ -188,7 +188,6 @@
 
   <section class="authside">
     <div class="card">
-
       <div class="brand mobile"><b>V</b> VESTORA</div>
 
       <div class="tabs">
@@ -297,7 +296,96 @@
           <small id="date"></small>
         </div>
 
-        <!-- FEATURED VST COIN -->
+        <div class="notice">
+          <b>Account and transaction status</b>
+          <p>
+            Only deposits that have been independently verified and approved
+            by an authorised administrator can be credited. Never send funds
+            until you have confirmed the receiving address and network.
+          </p>
+        </div>
+
+        <div class="notice">
+          <b>🔐 Secure your account with a passkey</b>
+          <p>
+            Your device may use Face ID, fingerprint, PIN or a security key.
+            VESTORA does not receive your biometric data.
+          </p>
+          <button id="registerPasskeyBtn" class="primary compact">
+            Set up Face ID / Fingerprint
+          </button>
+        </div>
+
+        <!-- USD WALLET PERFORMANCE CHART -->
+        <section class="portfolio-panel">
+          <div class="portfolio-topline">
+            <div>
+              <small>USD WALLET PERFORMANCE</small>
+              <h2 id="portfolioBalance">$0.00</h2>
+              <p>Your USD wallet balance over time</p>
+            </div>
+            <span class="portfolio-live">USD WALLET</span>
+          </div>
+
+          <div class="portfolio-chart-toolbar" id="portfolioIntervals">
+            <button type="button" class="selected" data-range="1D">1D</button>
+            <button type="button" data-range="1W">1W</button>
+            <button type="button" data-range="1M">1M</button>
+            <button type="button" data-range="3M">3M</button>
+            <button type="button" data-range="1Y">1Y</button>
+            <button type="button" data-range="ALL">ALL</button>
+          </div>
+
+          <div class="portfolio-chart-viewport" id="portfolioChartViewport">
+            <svg id="portfolioChart" viewBox="0 0 900 230" role="img" aria-label="USD wallet balance history">
+              <text x="450" y="115" text-anchor="middle" fill="#929bb8">Your USD balance history will appear here.</text>
+            </svg>
+          </div>
+
+          <div class="portfolio-chart-foot">
+            <span id="portfolioChartStatus">Based on recorded USD wallet transactions</span>
+            <span>Drag to explore chart</span>
+          </div>
+        </section>
+
+        <!-- ACCOUNT BALANCES -->
+        <div class="stats dashboard-stats">
+
+          <article class="featured">
+            <small>USD WALLET BALANCE</small>
+            <h2 id="balance">$0.00</h2>
+            <p>Available wallet balance</p>
+          </article>
+
+          <article class="vst-balance-card">
+            <small>VST BALANCE</small>
+            <h2 id="vstBalance">0 VST</h2>
+            <p>Your VESTORA coin balance</p>
+          </article>
+
+          <article>
+            <small>ACCOUNT</small>
+            <h2 id="accountStatus">Active</h2>
+            <p>Signed-in profile</p>
+          </article>
+
+          <article>
+            <small>CRYPTO ASSETS</small>
+            <h2>10</h2>
+            <p>Market watchlist</p>
+          </article>
+
+        </div>
+
+        <h3>Explore VESTORA</h3>
+
+        <div class="quick">
+          <button data-go="wallet">▣<b>Wallet & deposits</b><small>View deposit options ↗</small></button>
+          <button data-go="markets">⌁<b>Crypto markets</b><small>Market data status ↗</small></button>
+          <button data-go="activity">↗<b>Recent activity</b><small>Review transactions ↗</small></button>
+        </div>
+
+        <!-- FEATURED VST COIN MOVED DOWN -->
         <section class="vst-promo vst-promo-home">
           <div class="vst-promo-art">
             <span class="vst-orbit"></span>
@@ -329,54 +417,11 @@
           </div>
         </section>
 
-        <div class="notice">
-          <b>Account and transaction status</b>
-          <p>
-            Only deposits that have been independently verified and approved
-            by an authorised administrator can be credited. Never send funds
-            until you have confirmed the receiving address and network.
-          </p>
-        </div>
-
-        <div class="notice">
-          <b>🔐 Secure your account with a passkey</b>
-          <p>
-            Your device may use Face ID, fingerprint, PIN or a security key.
-            VESTORA does not receive your biometric data.
-          </p>
-          <button id="registerPasskeyBtn" class="primary compact">
-            Set up Face ID / Fingerprint
-          </button>
-        </div>
-
-        <div class="stats">
-          <article class="featured">
-            <small>USD WALLET BALANCE</small>
-            <h2 id="balance">$0.00</h2>
-            <p>Available wallet balance</p>
-          </article>
-          <article>
-            <small>ACCOUNT</small>
-            <h2 id="accountStatus">Active</h2>
-            <p>Signed-in profile</p>
-          </article>
-          <article>
-            <small>CRYPTO ASSETS</small>
-            <h2>10</h2>
-            <p>Market watchlist</p>
-          </article>
-        </div>
-
-        <h3>Explore VESTORA</h3>
-        <div class="quick">
-          <button data-go="wallet">▣<b>Wallet & deposits</b><small>View deposit options ↗</small></button>
-          <button data-go="markets">⌁<b>Crypto markets</b><small>Market data status ↗</small></button>
-          <button data-go="activity">↗<b>Recent activity</b><small>Review transactions ↗</small></button>
-        </div>
       </section>
 
       <!-- MARKETS -->
       <section id="markets" class="page hide vestora-markets">
+
         <div class="market-heading">
           <div>
             <small>SPOT MARKET OVERVIEW</small>
@@ -394,7 +439,9 @@
         </div>
 
         <div class="market-layout">
+
           <section class="market-main">
+
             <div class="market-pair-head">
               <div class="market-coin-title">
                 <img id="marketCoinLogo" src="https://assets.coincap.io/assets/icons/btc@2x.png" alt="Bitcoin logo">
@@ -403,6 +450,7 @@
                   <small id="marketCoinName">Bitcoin · Spot market</small>
                 </div>
               </div>
+
               <div class="market-current">
                 <strong id="marketCurrentPrice">Loading…</strong>
                 <span id="marketPriceChange">Fetching market data</span>
@@ -436,11 +484,16 @@
               <span>Data source: Binance historical data and Bybit live trade feed</span>
               <span>Market information only · No trading</span>
             </div>
+
           </section>
 
           <aside class="market-side">
+
             <div class="market-list-head">
-              <div><h3>Spot markets</h3><small>Prices in USDT</small></div>
+              <div>
+                <h3>Spot markets</h3>
+                <small>Prices in USDT</small>
+              </div>
               <button id="marketWatchToggle" class="watch-toggle">☆ Watchlist</button>
             </div>
 
@@ -458,16 +511,20 @@
             <div id="marketCoinRows">
               <div class="chart-loading">Loading markets…</div>
             </div>
+
           </aside>
+
         </div>
 
         <p id="marketStatus" class="market-status">
           Connecting to live public market data…
         </p>
+
       </section>
 
       <!-- WALLET -->
       <section id="wallet" class="page hide">
+
         <small>YOUR ACCOUNT</small>
         <h1>Wallet & deposits</h1>
 
@@ -539,12 +596,15 @@
             </tbody>
           </table>
         </div>
+
       </section>
 
       <!-- ACTIVITY -->
       <section id="activity" class="page hide">
+
         <small>ACCOUNT TIMELINE</small>
         <h1>Activity</h1>
+
         <div class="table">
           <h3>Recent transactions</h3>
           <table>
@@ -556,16 +616,19 @@
             </tbody>
           </table>
         </div>
+
       </section>
 
       <!-- ADMIN -->
       <section id="admin" class="page hide">
+
         <div id="adminDashboardHome" class="admin-dashboard-home">
           <small>VESTORA CONTROL CENTRE</small>
           <h1>Admin Dashboard</h1>
           <p class="admin-dashboard-intro">Choose a management area to continue.</p>
 
           <div class="admin-dashboard-grid">
+
             <button type="button" class="admin-dashboard-card" data-admin-view="deposits">
               <span class="admin-card-icon">⇩</span>
               <span class="admin-card-copy">
@@ -592,14 +655,17 @@
               </span>
               <span class="admin-card-arrow">↗</span>
             </button>
+
           </div>
         </div>
 
         <!-- PENDING DEPOSITS -->
         <section id="adminViewDeposits" class="admin-subview hide">
+
           <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
           <small>DEPOSIT CONTROL</small>
           <h1>Pending Deposits</h1>
+
           <div class="notice">
             <b>Manual verification required</b>
             <p>
@@ -608,6 +674,7 @@
               not already been credited. This interface does not automatically monitor blockchains.
             </p>
           </div>
+
           <div class="table">
             <h3>Deposit requests awaiting review</h3>
             <table>
@@ -621,56 +688,72 @@
               </tbody>
             </table>
           </div>
+
         </section>
 
         <!-- CUSTOMER BALANCE MANAGEMENT -->
         <section id="adminViewBalance" class="admin-subview hide">
+
           <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
           <small>ACCOUNT CONTROLS</small>
           <h1>Balance Management</h1>
+
           <div class="panel admin-balance-panel">
             <h3>Customer Balance Management</h3>
+
             <label>Search customer by name or username
               <input id="balanceCustomerSearch" type="search" placeholder="Enter customer name or username">
             </label>
+
             <button id="balanceCustomerSearchBtn" class="primary compact">Search Customers</button>
             <div id="balanceCustomerResults" class="balance-customer-results"></div>
 
             <div id="balanceCustomerSelected" class="balance-customer-selected hide">
+
               <h3 id="balanceCustomerName"></h3>
               <p id="balanceCustomerUsername"></p>
+
               <div class="balance-customer-balances">
                 <div><small>USD BALANCE</small><strong id="adminUsdBalance">$0.00</strong></div>
                 <div><small>VST BALANCE</small><strong id="adminVstBalance">0 VST</strong></div>
               </div>
+
               <label>Currency
                 <select id="balanceCurrency">
                   <option value="USD">USD</option>
                   <option value="VST">VST</option>
                 </select>
               </label>
+
               <label>Adjustment
                 <select id="balanceAdjustmentType">
                   <option value="credit">Credit</option>
                   <option value="debit">Debit</option>
                 </select>
               </label>
+
               <label>Amount
                 <input id="balanceAdjustmentAmount" type="number" min="0" step="any" placeholder="Enter amount">
               </label>
+
               <label>Reason
                 <input id="balanceAdjustmentReason" type="text" placeholder="Reason for adjustment">
               </label>
+
               <button id="applyBalanceAdjustment" class="primary compact" disabled>Review and Apply Adjustment</button>
+
             </div>
           </div>
+
         </section>
 
         <!-- BALANCE ADJUSTMENT AUDIT HISTORY -->
         <section id="adminViewHistory" class="admin-subview hide">
+
           <button type="button" class="admin-back-button" data-admin-back>← Back to Admin Dashboard</button>
           <small>ADMIN AUDIT</small>
           <h1>Balance Adjustment History</h1>
+
           <div class="table balance-adjustment-history">
             <h3>Recorded balance changes</h3>
             <table>
@@ -685,7 +768,9 @@
               </tbody>
             </table>
           </div>
+
         </section>
+
       </section>
 
     </div>
@@ -693,6 +778,7 @@
     <footer class="appfooter">
       VESTORA · Digital asset services involve risk. Verify all transaction details before sending funds.
     </footer>
+
   </section>
 </main>
 
