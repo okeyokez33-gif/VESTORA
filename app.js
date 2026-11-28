@@ -1,4 +1,6 @@
 (()=>{
+  "use strict";
+
   const c=window.VESTORA_CONFIG;
   const sb=window.supabase.createClient(c.SUPABASE_URL,c.SUPABASE_ANON_KEY,{
     auth:{experimental:{passkey:true}}
@@ -7,6 +9,9 @@
   const $=id=>document.getElementById(id);
   let user=null,role="customer";
   let selectedBalanceCustomer=null;
+  let usdHistory=[];
+  let selectedPortfolioRange="1M";
+  let portfolioDragStart=null;
 
   const safe=s=>String(s??"").replace(/[&<>"]/g,x=>({
     "&":"&amp;",
@@ -22,10 +27,26 @@
     setTimeout(()=>t.classList.remove("show"),4000);
   }
 
+  function money(value){
+    return new Intl.NumberFormat("en-US",{
+      style:"currency",
+      currency:"USD",
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    }).format(Number(value||0));
+  }
+
+  function formatVST(value){
+    return Number(value||0).toLocaleString("en-US",{
+      maximumFractionDigits:8
+    })+" VST";
+  }
+
   function auth(tab){
     ["login","signup","reset"].forEach(x=>
       $(x).classList.toggle("hide",x!==tab)
     );
+
     document.querySelectorAll("[data-tab]").forEach(b=>
       b.classList.toggle("selected",b.dataset.tab===tab)
     );
@@ -66,13 +87,252 @@
       openAdminView("dashboard");
   }
 
+  // =====================================================
+  // USD WALLET PERFORMANCE CHART
+  // =====================================================
+
+  function getTransactionBalancePoint(transaction){
+    const currency=String(transaction.currency||"USD").toUpperCase();
+
+    if(currency!=="USD")return null;
+
+    const status=String(transaction.status||"").toLowerCase();
+
+    if(!["completed","approved","success","successful","confirmed"].includes(status))
+      return null;
+
+    const possibleBalance=[
+      transaction.balance_after,
+      transaction.balance_after_usd,
+      transaction.running_balance,
+      transaction.wallet_balance_after
+    ];
+
+    const balance=possibleBalance.find(value=>
+      value!==null&&value!==undefined&&Number.isFinite(Number(value))
+    );
+
+    if(balance===undefined)return null;
+
+    const timestamp=new Date(transaction.created_at).getTime();
+
+    if(!Number.isFinite(timestamp))return null;
+
+    return {
+      time:timestamp,
+      balance:Number(balance)
+    };
+  }
+
+  function prepareUsdHistory(transactions){
+    usdHistory=(transactions||[])
+      .map(getTransactionBalancePoint)
+      .filter(Boolean)
+      .sort((a,b)=>a.time-b.time);
+  }
+
+  function getRangeStart(range){
+    const now=Date.now();
+    const day=86400000;
+
+    const ranges={
+      "1D":day,
+      "1W":7*day,
+      "1M":30*day,
+      "3M":90*day,
+      "1Y":365*day,
+      "ALL":Infinity
+    };
+
+    return now-(ranges[range]||30*day);
+  }
+
+  function drawPortfolioChart(){
+    const svg=$("portfolioChart");
+    const status=$("portfolioChartStatus");
+
+    if(!svg||!status)return;
+
+    const rangeStart=getRangeStart(selectedPortfolioRange);
+
+    const points=usdHistory.filter(point=>
+      point.time>=rangeStart
+    );
+
+    if(!points.length){
+      svg.innerHTML=`
+        <text x="450" y="105" text-anchor="middle"
+          fill="#929bb8" font-size="15">
+          No recorded USD balance history for this period
+        </text>
+        <text x="450" y="132" text-anchor="middle"
+          fill="#68738c" font-size="11">
+          Historical balance snapshots are required to draw this chart
+        </text>
+      `;
+
+      status.textContent=usdHistory.length
+        ?"No balance snapshots available for this period"
+        :"No USD balance history available yet";
+
+      return;
+    }
+
+    const width=900;
+    const height=230;
+    const padLeft=65;
+    const padRight=25;
+    const padTop=20;
+    const padBottom=35;
+
+    const values=points.map(p=>p.balance);
+    let min=Math.min(...values);
+    let max=Math.max(...values);
+
+    if(min===max){
+      const padding=Math.max(Math.abs(min)*0.03,1);
+      min-=padding;
+      max+=padding;
+    }
+
+    const xSpan=Math.max(
+      points[points.length-1].time-points[0].time,
+      1
+    );
+
+    const ySpan=max-min;
+
+    const x=time=>
+      padLeft+
+      ((time-points[0].time)/xSpan)*
+      (width-padLeft-padRight);
+
+    const y=value=>
+      padTop+
+      ((max-value)/ySpan)*
+      (height-padTop-padBottom);
+
+    const path=points.map((p,index)=>
+      (index===0?"M":"L")+x(p.time).toFixed(2)+" "+y(p.balance).toFixed(2)
+    ).join(" ");
+
+    const area=path+
+      ` L ${x(points[points.length-1].time)} ${height-padBottom}`+
+      ` L ${x(points[0].time)} ${height-padBottom} Z`;
+
+    const gridLines=[0,1,2,3].map(i=>{
+      const gy=padTop+i*((height-padTop-padBottom)/3);
+      const value=max-i*(ySpan/3);
+
+      return `
+        <line x1="${padLeft}" y1="${gy}" x2="${width-padRight}" y2="${gy}"
+          stroke="#ffffff12" stroke-dasharray="4 6"/>
+        <text x="${padLeft-10}" y="${gy+4}" text-anchor="end"
+          fill="#8994ac" font-size="10">${money(value)}</text>
+      `;
+    }).join("");
+
+    const last=points[points.length-1];
+    const first=points[0];
+
+    const dateLabel=time=>new Date(time).toLocaleDateString(undefined,{
+      month:"short",
+      day:"numeric"
+    });
+
+    svg.innerHTML=`
+      <defs>
+        <linearGradient id="portfolioAreaFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#d9b45f" stop-opacity=".28"/>
+          <stop offset="100%" stop-color="#d9b45f" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+
+      ${gridLines}
+
+      <path d="${area}" fill="url(#portfolioAreaFill)"/>
+
+      <path d="${path}" fill="none" stroke="#d9b45f"
+        stroke-width="3" stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+      <circle cx="${x(last.time)}" cy="${y(last.balance)}"
+        r="5" fill="#e6c878" stroke="#101622" stroke-width="3"/>
+
+      <text x="${padLeft}" y="${height-8}"
+        fill="#8994ac" font-size="10">${dateLabel(first.time)}</text>
+
+      <text x="${width-padRight}" y="${height-8}"
+        text-anchor="end" fill="#8994ac" font-size="10">
+        ${dateLabel(last.time)}
+      </text>
+    `;
+
+    status.textContent=
+      points.length+" recorded USD balance snapshot"+
+      (points.length===1?"":"s")+" · Historical records only";
+  }
+
+  function setupPortfolioChart(){
+    const controls=$("portfolioIntervals");
+
+    if(!controls)return;
+
+    controls.querySelectorAll("[data-range]").forEach(button=>{
+      button.addEventListener("click",()=>{
+        selectedPortfolioRange=button.dataset.range;
+
+        controls.querySelectorAll("[data-range]").forEach(b=>
+          b.classList.toggle("selected",b===button)
+        );
+
+        drawPortfolioChart();
+      });
+    });
+
+    const viewport=$("portfolioChartViewport");
+
+    if(viewport){
+      viewport.addEventListener("pointerdown",event=>{
+        portfolioDragStart={
+          x:event.clientX,
+          scroll:viewport.scrollLeft
+        };
+      });
+
+      viewport.addEventListener("pointermove",event=>{
+        if(!portfolioDragStart)return;
+
+        if(event.buttons!==1){
+          portfolioDragStart=null;
+          return;
+        }
+
+        viewport.scrollLeft=
+          portfolioDragStart.scroll-
+          (event.clientX-portfolioDragStart.x);
+      });
+
+      ["pointerup","pointercancel","pointerleave"].forEach(name=>
+        viewport.addEventListener(name,()=>{
+          portfolioDragStart=null;
+        })
+      );
+    }
+  }
+
+  setupPortfolioChart();
+
+  // =====================================================
   // ADMIN DASHBOARD NAVIGATION
+  // =====================================================
 
   function openAdminView(view){
     if(role!=="admin")
       return toast("Administrator access required.");
 
     const dashboard=$("adminDashboardHome");
+
     const views={
       deposits:$("adminViewDeposits"),
       balance:$("adminViewBalance"),
@@ -109,11 +369,21 @@
     button.onclick=()=>openAdminView("dashboard");
   });
 
+  // =====================================================
+  // LOAD USER ACCOUNT
+  // =====================================================
+
   async function enter(u){
     user=u;
     showApp();
 
-    const [{data:p},{data:r},{data:w},{data:tx}]=await Promise.all([
+    const [
+      {data:p},
+      {data:r},
+      {data:w},
+      {data:tx}
+    ]=await Promise.all([
+
       sb.from("profiles")
         .select("full_name")
         .eq("id",u.id)
@@ -125,7 +395,7 @@
         .maybeSingle(),
 
       sb.from("wallets")
-        .select("balance,currency")
+        .select("balance,currency,vst_balance")
         .eq("user_id",u.id)
         .maybeSingle(),
 
@@ -133,7 +403,7 @@
         .select("*")
         .eq("user_id",u.id)
         .order("created_at",{ascending:false})
-        .limit(20)
+        .limit(500)
     ]);
 
     role=r?.role||"customer";
@@ -145,22 +415,37 @@
 
     $("adminNav").classList.toggle("hide",role!=="admin");
 
-    const money=new Intl.NumberFormat("en-US",{
-      style:"currency",
-      currency:w?.currency||"USD"
-    }).format(Number(w?.balance||0));
+    const usdBalance=Number(w?.balance||0);
+    const vstBalance=Number(w?.vst_balance||0);
 
-    $("balance").textContent=money;
-    $("balance2").textContent=money;
+    const currency=String(w?.currency||"USD").toUpperCase();
 
-    $("activityRows").innerHTML=(tx||[]).map(t=>`
-      <tr>
-        <td>${safe(t.type)}</td>
-        <td>${safe(t.description||"Account activity")}</td>
-        <td>${safe(t.currency||"USD")} ${Number(t.amount).toFixed(2)}</td>
-        <td>${safe(t.status)}</td>
-      </tr>
-    `).join("")||'<tr><td colspan="4">No activity yet.</td></tr>';
+    const displayMoney=currency==="USD"
+      ?money(usdBalance)
+      :new Intl.NumberFormat("en-US",{
+        style:"currency",
+        currency:currency
+      }).format(usdBalance);
+
+    $("balance").textContent=displayMoney;
+    $("balance2").textContent=displayMoney;
+    $("portfolioBalance").textContent=money(usdBalance);
+    $("vstBalance").textContent=formatVST(vstBalance);
+
+    prepareUsdHistory(tx||[]);
+    drawPortfolioChart();
+
+    $("activityRows").innerHTML=(tx||[])
+      .slice(0,20)
+      .map(t=>`
+        <tr>
+          <td>${safe(t.type)}</td>
+          <td>${safe(t.description||"Account activity")}</td>
+          <td>${safe(t.currency||"USD")} ${Number(t.amount).toFixed(2)}</td>
+          <td>${safe(t.status)}</td>
+        </tr>
+      `).join("")||
+      '<tr><td colspan="4">No activity yet.</td></tr>';
 
     $("date").textContent=new Date().toLocaleDateString(undefined,{
       month:"short",
@@ -169,7 +454,9 @@
     });
   }
 
+  // =====================================================
   // AUTHENTICATION
+  // =====================================================
 
   document.querySelectorAll("[data-tab]").forEach(b=>
     b.onclick=()=>auth(b.dataset.tab)
@@ -272,6 +559,7 @@
     user=null;
     role="customer";
     selectedBalanceCustomer=null;
+    usdHistory=[];
 
     $("app").classList.add("hide");
     $("auth").classList.remove("hide");
@@ -298,7 +586,9 @@
     }
   );
 
+  // =====================================================
   // CUSTOMER DEPOSITS
+  // =====================================================
 
   $("submitDeposit").onclick=async()=>{
     if(!user)
@@ -353,7 +643,9 @@
     `).join("")||'<tr><td colspan="4">No deposit requests.</td></tr>';
   }
 
+  // =====================================================
   // ADMIN DEPOSIT MANAGEMENT
+  // =====================================================
 
   async function loadAdminDeposits(){
     const {data,error}=await sb.from("deposit_requests")
@@ -426,7 +718,9 @@
     );
   }
 
+  // =====================================================
   // ADMIN CUSTOMER BALANCE MANAGEMENT
+  // =====================================================
 
   async function searchBalanceCustomers(){
     if(role!=="admin")
@@ -464,6 +758,7 @@
     }
 
     const combined=[...(byName.data||[]),...(byUsername.data||[])];
+
     const unique=Array.from(
       new Map(combined.map(p=>[p.id,p])).values()
     );
@@ -524,16 +819,10 @@
       return;
     }
 
-    $("adminUsdBalance").textContent=
-      "$"+Number(data.balance||0).toLocaleString("en-US",{
-        minimumFractionDigits:2,
-        maximumFractionDigits:2
-      });
+    $("adminUsdBalance").textContent=money(data.balance);
 
     $("adminVstBalance").textContent=
-      Number(data.vst_balance||0).toLocaleString("en-US",{
-        maximumFractionDigits:8
-      })+" VST";
+      formatVST(data.vst_balance);
 
     $("applyBalanceAdjustment").disabled=false;
   }
@@ -542,18 +831,15 @@
     const number=Number(value||0);
 
     if(currency==="USD"){
-      return "$"+number.toLocaleString("en-US",{
-        minimumFractionDigits:2,
-        maximumFractionDigits:2
-      });
+      return money(number);
     }
 
-    return number.toLocaleString("en-US",{
-      maximumFractionDigits:8
-    })+" VST";
+    return formatVST(number);
   }
 
-  // IMMUTABLE BALANCE ADJUSTMENT HISTORY
+  // =====================================================
+  // ADMIN BALANCE ADJUSTMENT HISTORY
+  // =====================================================
 
   async function loadBalanceAdjustmentLogs(){
     if(role!=="admin")return;
@@ -612,7 +898,9 @@
     `).join("");
   }
 
-  // APPLY SECURE ADMIN BALANCE ADJUSTMENT
+  // =====================================================
+  // APPLY ADMIN BALANCE ADJUSTMENT
+  // =====================================================
 
   async function applyBalanceAdjustment(){
     if(role!=="admin")
@@ -681,7 +969,9 @@
     }
   }
 
+  // =====================================================
   // BALANCE MANAGEMENT BUTTONS
+  // =====================================================
 
   $("balanceCustomerSearchBtn").onclick=searchBalanceCustomers;
 
@@ -694,7 +984,9 @@
 
   $("applyBalanceAdjustment").onclick=applyBalanceAdjustment;
 
-  // INITIAL DATE AND SESSION
+  // =====================================================
+  // INITIAL SESSION
+  // =====================================================
 
   $("date").textContent=new Date().toLocaleDateString();
 
@@ -710,6 +1002,7 @@
       user=null;
       role="customer";
       selectedBalanceCustomer=null;
+      usdHistory=[];
 
       $("app").classList.add("hide");
       $("auth").classList.remove("hide");
