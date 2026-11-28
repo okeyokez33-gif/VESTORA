@@ -133,6 +133,134 @@
   transform:translateY(-2px);
   box-shadow:0 8px 25px #d5a43d44;
 }
+
+/* HOMEPAGE LIVE MARKET SECTION */
+.home-market-preview {
+  margin:26px 0;
+  padding:22px;
+  border:1px solid #ffffff14;
+  border-radius:17px;
+  background:linear-gradient(145deg,#111927,#0d1420);
+  box-shadow:0 14px 35px #0003;
+}
+.home-market-heading {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:20px;
+}
+.home-market-heading small {
+  color:#d8b765;
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:2px;
+}
+.home-market-heading h3 {
+  margin:7px 0 5px;
+  color:#f5f6fa;
+  font-size:21px;
+}
+.home-market-heading p {
+  margin:0;
+  color:#929db1;
+  font-size:11px;
+  line-height:1.6;
+}
+.home-market-heading button {
+  flex-shrink:0;
+  border:1px solid #d5b15c66;
+  background:#d5b15c12;
+  color:#e5c577;
+  padding:10px 13px;
+  border-radius:9px;
+  font-size:10px;
+  font-weight:700;
+  cursor:pointer;
+}
+.home-market-heading button:hover {
+  background:#d5b15c25;
+}
+.home-market-list {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.home-market-list:empty {
+  display:block;
+}
+.home-market-loading {
+  color:#8994ac;
+  font-size:12px;
+  padding:15px 0;
+}
+.home-market-item {
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:13px;
+  border:1px solid #ffffff10;
+  border-radius:12px;
+  background:#ffffff06;
+  color:#fff;
+  cursor:pointer;
+  text-align:left;
+  transition:background .2s,border-color .2s,transform .2s;
+}
+.home-market-item:hover {
+  background:#d5b15c12;
+  border-color:#d5b15c66;
+  transform:translateY(-2px);
+}
+.home-market-coin {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.home-market-coin img {
+  width:34px;
+  height:34px;
+  flex-shrink:0;
+  border-radius:50%;
+  object-fit:contain;
+}
+.home-market-coin strong {
+  display:block;
+  font-size:12px;
+  color:#f5f6fa;
+}
+.home-market-coin small {
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+  color:#8994ac;
+}
+.home-market-price {
+  min-width:0;
+  text-align:right;
+}
+.home-market-price strong {
+  display:block;
+  font-size:12px;
+  color:#f5f6fa;
+  overflow-wrap:anywhere;
+}
+.home-market-price small {
+  display:block;
+  margin-top:4px;
+  font-size:10px;
+  font-weight:700;
+}
+.home-market-price .positive {
+  color:#27c995;
+}
+.home-market-price .negative {
+  color:#f06b78;
+}
+
 @media(max-width:850px) {
   .vst-promo {
     grid-template-columns:125px 1fr;
@@ -160,6 +288,19 @@
   }
   .vst-promo-copy h2 {
     font-size:25px;
+  }
+  .home-market-preview {
+    padding:15px;
+  }
+  .home-market-heading {
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .home-market-heading h3 {
+    font-size:19px;
+  }
+  .home-market-list {
+    grid-template-columns:1fr;
   }
 }
 </style>
@@ -385,7 +526,28 @@
           <button data-go="activity">↗<b>Recent activity</b><small>Review transactions ↗</small></button>
         </div>
 
-        <!-- FEATURED VST COIN MOVED DOWN -->
+        <!-- HOMEPAGE LIVE COIN MARKET PREVIEW -->
+        <section class="home-market-preview">
+
+          <div class="home-market-heading">
+            <div>
+              <small>LIVE CRYPTO MARKETS</small>
+              <h3>Explore the market</h3>
+              <p>Follow live coin prices and open any coin to view its chart and performance.</p>
+            </div>
+
+            <button type="button" data-go="markets">
+              View all markets ↗
+            </button>
+          </div>
+
+          <div class="home-market-list" id="homeMarketRows">
+            <p class="home-market-loading">Loading live market prices...</p>
+          </div>
+
+        </section>
+
+        <!-- FEATURED VST COIN -->
         <section class="vst-promo vst-promo-home">
           <div class="vst-promo-art">
             <span class="vst-orbit"></span>
